@@ -72,11 +72,13 @@ export async function reviseArticleAction(articleId: string, rating: number, not
 
         // Handle Image Update if prompt exists
         // Handle Image Update if prompt exists
+        // Handle Image Update if prompt exists
         if (revisedData.image_prompt) {
-            // TODO: Integrate Google Imagen API here as per user request.
-            // Pollinations AI has been removed.
-            // For now, we do not update the image automatically to avoid using external non-Google services.
-            console.log("Image prompt generated but image generation skipped (waiting for Google Imagen integration):", revisedData.image_prompt);
+            // User requested REALISTIC images. Using Stock Photo service (LoremFlickr) as placeholder for Google Imagen.
+            // This ensures photos are real, not AI cartoons.
+            const keywords = revisedData.image_prompt.split(',').slice(0, 3).join(',').replace(/ /g, ',') || "child,health";
+            const dynamicImageUrl = `https://loremflickr.com/1200/630/${encodeURIComponent(keywords)}?lock=${Date.now()}`;
+            updateData.imageUrl = dynamicImageUrl;
         }
 
         // --- SAVE FEEDBACK TO DB FOR TRAINING ---
