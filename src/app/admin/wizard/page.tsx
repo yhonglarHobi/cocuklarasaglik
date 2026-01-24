@@ -1,16 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Zap,
     Clock,
     FileText,
     CheckCircle,
     Loader,
-    Settings,
-    Play,
-    Calendar,
-    AlertTriangle,
     Target,
     Plus,
     Edit2,
@@ -18,18 +14,22 @@ import {
     Users,
     Mail,
     Database,
+    Settings,
     X,
-    Eye
+    Eye,
+    Trash2
 } from "lucide-react";
 import Link from "next/link";
+import { generateArticlesAction, getDraftArticlesAction, publishArticleAction, deleteArticleAction } from "./actions";
 
 export default function AIWizardPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationStep, setGenerationStep] = useState("");
     const [selectedTargetCategory, setSelectedTargetCategory] = useState("all");
-    const [targetCount, setTargetCount] = useState(5);
+    const [targetCount, setTargetCount] = useState(3); // Default 3
 
-    // -- Categori Management State --
+    // State for Categories and Drafts
+    // Not: Kategorileri de veritabanından çekmek en doğrusu, şimdilik statik ama DB ile eşleşmeli
     const [categories, setCategories] = useState([
         { id: "nutrition", name: "Beslenme", slug: "/beslenme" },
         { id: "health", name: "Sağlık Sorunları", slug: "/saglik-sorunlari" },
@@ -40,75 +40,56 @@ export default function AIWizardPage() {
     const [newCategoryName, setNewCategoryName] = useState("");
 
     const [selectedDraft, setSelectedDraft] = useState<any>(null);
+    const [drafts, setDrafts] = useState<any[]>([]);
+    const [isLoadingDrafts, setIsLoadingDrafts] = useState(true);
 
-    const [drafts, setDrafts] = useState([
-        {
-            id: 101,
-            title: "Çocuklarda Mevsimsel Alerjiler: AAP Rehberi",
-            source: "AAP",
-            status: "Onay Bekliyor",
-            date: "Bugün, 12:05",
-            category: "Sağlık Sorunları",
-            content: "Bu makalede Amerikan Pediatri Akademisi'nin (AAP) mevsimsel alerjiler konusundaki son rehberini derledik. Polen takvimi, belirtilerin yönetimi ve ilaç kullanımı hakkında ebeveynlere yönelik pratik bilgiler içerir. Özellikle bahar aylarında artan semptomlar için alınabilecek önlemler detaylandırılmıştır."
-        },
-        {
-            id: 102,
-            title: "Ek Gıdaya Geçişte 5 Altın Kural",
-            source: "Nemours",
-            status: "Onay Bekliyor",
-            date: "Bugün, 12:05",
-            category: "Beslenme",
-            content: "Nemours KidsHealth verilerine dayanarak hazırlanan bu içerik, 6. aydan itibaren ek gıdaya geçiş sürecini ele alıyor. 3 gün kuralı, alerjen besinlerin tanıtımı ve püre kıvamları hakkında bilimsel öneriler sunuyor. Ebeveynlerin en sık yaptığı hatalar ve çözümleri madde madde sıralanmıştır."
-        },
-    ]);
+    // 1. Sayfa Yüklendiğinde Taslakları Çek
+    async function loadDrafts() {
+        setIsLoadingDrafts(true);
+        const data = await getDraftArticlesAction();
+        // Basit bir mapleme: DB'den gelen veriyi UI formatına uydur
+        const formattedDrafts = data.map(d => ({
+            id: d.id,
+            title: d.title,
+            source: "AI / Gemini", // Kaynak bilgisini içerikten veya DB'den alabiliriz
+            status: d.published ? "Yayında" : "Onay Bekliyor",
+            date: new Date(d.createdAt).toLocaleDateString("tr-TR", { hour: '2-digit', minute: '2-digit' }),
+            category: d.category?.name || "Genel",
+            content: d.content
+        }));
+        setDrafts(formattedDrafts);
+        setIsLoadingDrafts(false);
+    }
 
-    // -- Simulated AI Category Proposal --
-    const [aiProposal, setAiProposal] = useState<{ originalName: string, suggestedName: string, reason: string } | null>(null);
+    useEffect(() => {
+        loadDrafts();
+    }, []);
 
-    const startManualGeneration = () => {
+    // 2. Gerçek Üretimi Başlat
+    const startManualGeneration = async () => {
         setIsGenerating(true);
-        setGenerationStep("Kaynaklar taranıyor (AAP, Nemours, SickKids)...");
+        setGenerationStep(`Gemini AI ${targetCount} adet makale üretiyor...`);
 
-        setTimeout(() => setGenerationStep(`Hedef Kategori: ${categories.find(c => c.id === selectedTargetCategory)?.name || 'Karma'} analizi yapılıyor...`), 1500);
-        setTimeout(() => setGenerationStep("İçerik sentezleniyor..."), 3000);
+        try {
+            const res = await generateArticlesAction(selectedTargetCategory, targetCount);
 
-        setTimeout(() => {
-            setIsGenerating(false);
-            const newDrafts = [
-                {
-                    id: 201,
-                    title: "Hedefli İçerik: Ergenlerde Ekran Bağımlılığı",
-                    source: "AAP",
-                    status: "Onay Bekliyor",
-                    date: "Az önce",
-                    category: selectedTargetCategory === 'all' ? "Çocuk Psikolojisi" : (categories.find(c => c.id === selectedTargetCategory)?.name || "Genel"),
-                    content: "Ergenlerin ekran başında geçirdiği sürenin ruh sağlığına etkileri ve ebeveynlerin uygulayabileceği dijital detoks yöntemleri."
-                },
-                {
-                    id: 202,
-                    title: "Hedefli İçerik: Okul Öncesi Beslenme",
-                    source: "Nemours",
-                    status: "Onay Bekliyor",
-                    date: "Az önce",
-                    category: "Beslenme",
-                    content: "Okul öncesi dönemdeki çocukların günlük kalori ihtiyaçları ve sağlıklı beslenme çantası örnekleri."
-                },
-            ];
-            setDrafts([...newDrafts, ...drafts]);
-
-            // Simulate AI proposing a weird category
-            if (Math.random() > 0.5) {
-                setAiProposal({
-                    originalName: "Adolescent Mental Wellness",
-                    suggestedName: "Ergen Ruh Sağlığı",
-                    reason: "Sistemdeki 'Çocuk Psikolojisi' kategorisi bu içerik için çok genel kalıyor."
-                });
+            if (res.success) {
+                setGenerationStep(`Başarılı! ${res.count} makale veritabanına eklendi.`);
+                // Listeyi güncelle
+                await loadDrafts();
+            } else {
+                alert(`Hata: ${res.error}`);
             }
-
-        }, 5000);
+        } catch (err) {
+            alert("Beklenmedik bir hata oluştu.");
+        } finally {
+            setIsGenerating(false);
+            setGenerationStep("");
+        }
     };
 
     const handleCreateCategory = () => {
+        // Bu kısım şimdilik sadece UI, backend bağlantısı yok
         if (newCategoryName) {
             setCategories([...categories, { id: newCategoryName.toLowerCase(), name: newCategoryName, slug: `/${newCategoryName.toLowerCase()}` }]);
             setNewCategoryName("");
@@ -120,11 +101,28 @@ export default function AIWizardPage() {
         setSelectedDraft(draft);
     };
 
-    const handlePublish = (id: number) => {
-        // In a real app, this would make an API call to publish the article
-        setDrafts(drafts.filter(d => d.id !== id));
-        alert("İçerik başarıyla yayınlandı! 🎉\n(Canlı sitede Makaleler bölümüne eklendi)");
+    const handlePublish = async (id: string) => {
+        if (!confirm("Bu makaleyi canlı sitede yayınlamak istiyor musunuz?")) return;
+
+        const res = await publishArticleAction(id);
+        if (res.success) {
+            alert("İçerik başarıyla yayınlandı! 🎉");
+            loadDrafts(); // Listeyi yenile
+            if (selectedDraft?.id === id) setSelectedDraft(null); // Modalı kapat
+        } else {
+            alert("Yayınlama başarısız oldu.");
+        }
     };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Bu taslağı tamamen silmek istiyor musunuz?")) return;
+
+        const res = await deleteArticleAction(id);
+        if (res.success) {
+            loadDrafts();
+            if (selectedDraft?.id === id) setSelectedDraft(null);
+        }
+    }
 
     return (
         <div className="min-h-screen bg-[#f0f2f5] font-sans p-8">
@@ -183,7 +181,7 @@ export default function AIWizardPage() {
                                     >
                                         <option value="all">🎲 Şansına Bırak (Karma)</option>
                                         {categories.map(cat => (
-                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                            <option key={cat.id} value={cat.name}>{cat.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -197,7 +195,6 @@ export default function AIWizardPage() {
                                         <option value={1}>1 Makale</option>
                                         <option value={3}>3 Makale</option>
                                         <option value={5}>5 Makale</option>
-                                        <option value={10}>10 Makale (Bulk)</option>
                                     </select>
                                 </div>
                             </div>
@@ -221,30 +218,6 @@ export default function AIWizardPage() {
                             </button>
                         </div>
 
-                        {/* AI Category Proposal Alert */}
-                        {aiProposal && (
-                            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded shadow-sm flex items-start gap-4">
-                                <AlertTriangle className="w-6 h-6 text-yellow-600 shrink-0" />
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-yellow-800">Yapay Zeka Yeni Bir Kategori Önerdi!</h3>
-                                    <p className="text-sm text-yellow-700 mt-1 mb-3">
-                                        AI, <strong>"{aiProposal.originalName}"</strong> konulu bir içerik üretti ancak mevcut kategorilere uymadığını düşünüyor.
-                                        Önerisi: <strong>{aiProposal.suggestedName}</strong>.
-                                        <br />
-                                        <span className="text-xs italic opacity-80">Sebep: {aiProposal.reason}</span>
-                                    </p>
-                                    <div className="flex gap-3">
-                                        <button className="bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded text-xs font-bold border border-yellow-200 hover:bg-yellow-200">
-                                            Kategoriyi Onayla ve Ekle
-                                        </button>
-                                        <button className="bg-white text-gray-600 px-3 py-1.5 rounded text-xs font-bold border border-gray-200 hover:bg-gray-50">
-                                            Yoksay (Genel Kategoriye Ata)
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Drafts Queue */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
@@ -254,20 +227,31 @@ export default function AIWizardPage() {
                                     <span className="bg-hc-blue text-white text-xs px-2 py-0.5 rounded-full">{drafts.length}</span>
                                 </h2>
                             </div>
-                            <div className="divide-y divide-gray-50">
-                                {drafts.map((draft) => (
-                                    <div key={draft.id} className="p-4 hover:bg-blue-50/20 transition-colors flex justify-between items-center">
-                                        <div>
-                                            <h3 className="font-bold text-gray-800 text-sm">{draft.title}</h3>
-                                            <div className="flex gap-2 text-xs mt-1">
-                                                <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{draft.category || 'Genel'}</span>
-                                                <span className="text-hc-orange font-medium">{draft.source}</span>
-                                                <span className="text-gray-400">•</span>
-                                                <span className="text-gray-500">{draft.date}</span>
+
+                            {isLoadingDrafts ? (
+                                <div className="p-8 text-center text-gray-500 text-sm">Veriler yükleniyor...</div>
+                            ) : drafts.length === 0 ? (
+                                <div className="p-8 text-center text-gray-400 text-sm">Henüz onay bekleyen taslak yok.</div>
+                            ) : (
+                                <div className="divide-y divide-gray-50 max-h-[500px] overflow-y-auto">
+                                    {drafts.map((draft) => (
+                                        <div key={draft.id} className="p-4 hover:bg-blue-50/20 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                            <div>
+                                                <h3 className="font-bold text-gray-800 text-sm">{draft.title}</h3>
+                                                <div className="flex gap-2 text-xs mt-1">
+                                                    <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{draft.category}</span>
+                                                    <span className="text-gray-400">•</span>
+                                                    <span className="text-gray-500">{draft.date}</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <div className="flex gap-2">
+                                            <div className="flex gap-2 shrink-0">
+                                                <button
+                                                    onClick={() => handleDelete(draft.id)}
+                                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                    title="Sil"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                                 <button
                                                     onClick={() => handleReview(draft)}
                                                     className="px-3 py-1 text-xs font-bold border border-gray-300 rounded text-gray-600 hover:bg-gray-50 flex items-center gap-1"
@@ -282,9 +266,9 @@ export default function AIWizardPage() {
                                                 </button>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                     </div>
@@ -343,14 +327,14 @@ export default function AIWizardPage() {
             {/* Review Modal */}
             {selectedDraft && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
                         <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                             <div>
                                 <h3 className="font-bold text-gray-800 text-lg">{selectedDraft.title}</h3>
                                 <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
                                     <span className="bg-hc-blue/10 text-hc-blue px-2 py-0.5 rounded">{selectedDraft.category}</span>
                                     <span>•</span>
-                                    Kayna: {selectedDraft.source}
+                                    Kaynak: {selectedDraft.source}
                                 </p>
                             </div>
                             <button
@@ -361,21 +345,20 @@ export default function AIWizardPage() {
                             </button>
                         </div>
 
-                        <div className="p-6 overflow-y-auto">
-                            <div className="prose prose-sm max-w-none">
-                                <h4 className="font-bold text-gray-700 mb-2">Özet / Taslak İçerik</h4>
-                                <p className="text-gray-600 leading-relaxed">
-                                    {selectedDraft.content}
-                                </p>
+                        <div className="p-8 overflow-y-auto bg-white">
+                            {/* Render Full HTML Content */}
+                            <div
+                                className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-hc-blue prose-p:text-gray-600 prose-img:rounded-lg prose-ul:list-disc prose-ul:pl-5"
+                                dangerouslySetInnerHTML={{ __html: selectedDraft.content }}
+                            />
 
-                                <div className="mt-6 bg-yellow-50 p-4 rounded border border-yellow-100">
-                                    <h5 className="font-bold text-yellow-800 text-xs mb-2 flex items-center gap-1">
-                                        <Zap className="w-3 h-3" /> AI Analizi
-                                    </h5>
-                                    <p className="text-xs text-yellow-700">
-                                        Bu içerik {selectedDraft.source} veritabanından çekilmiş ve {selectedDraft.category} kategorisine uygun olarak sentezlenmiştir. Doğruluk oranı %98.
-                                    </p>
-                                </div>
+                            <div className="mt-8 bg-yellow-50 p-4 rounded border border-yellow-100">
+                                <h5 className="font-bold text-yellow-800 text-xs mb-2 flex items-center gap-1">
+                                    <Zap className="w-3 h-3" /> AI Analizi
+                                </h5>
+                                <p className="text-xs text-yellow-700">
+                                    Bu içerik Gemini AI tarafından üretilmiştir. Lütfen yayınlamadan önce tıbbi doğruluk açısından kontrol ediniz.
+                                </p>
                             </div>
                         </div>
 
@@ -387,10 +370,7 @@ export default function AIWizardPage() {
                                 Kapat
                             </button>
                             <button
-                                onClick={() => {
-                                    handlePublish(selectedDraft.id);
-                                    setSelectedDraft(null);
-                                }}
+                                onClick={() => handlePublish(selectedDraft.id)}
                                 className="px-4 py-2 text-sm font-bold bg-green-600 text-white hover:bg-green-700 rounded shadow-sm hover:shadow transition-all flex items-center gap-2"
                             >
                                 <CheckCircle className="w-4 h-4" />
