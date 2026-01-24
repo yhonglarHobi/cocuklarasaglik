@@ -21,10 +21,16 @@ export function Navbar({ menuItems }: NavbarProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const router = useRouter();
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSearch = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         if (searchQuery.trim()) {
             router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        }
+    };
+
+    const onKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleSearch();
         }
     };
 
@@ -80,16 +86,21 @@ export function Navbar({ menuItems }: NavbarProps) {
 
                 {/* Search & Donate */}
                 <div className="flex items-center gap-4 w-full md:w-auto">
-                    <form onSubmit={handleSearch} className="flex h-10 w-full md:w-80 border border-gray-300 rounded-sm overflow-hidden">
+                    <form onSubmit={(e) => handleSearch(e)} className="flex h-10 w-full md:w-80 border border-gray-300 rounded-sm overflow-hidden">
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={onKeyDown}
                             placeholder="Hastalık, aşı, belirti arayın..."
                             className="flex-1 px-3 text-sm outline-none text-gray-600 placeholder:text-gray-400 font-sans"
                         />
-                        <button type="submit" className="bg-hc-orange/70 w-10 flex items-center justify-center hover:bg-hc-orange text-white">
-                            <Search className="w-4 h-4" />
+                        <button
+                            type="button"
+                            onClick={() => handleSearch()}
+                            className="bg-hc-orange/70 w-10 flex items-center justify-center hover:bg-hc-orange text-white"
+                        >
+                            <Search className="w-4 h-4 pointer-events-none" />
                         </button>
                     </form>
                     <button className="h-10 px-6 bg-hc-blue text-white font-bold text-sm uppercase tracking-wider hover:bg-blue-800 transition-colors hidden md:block whitespace-nowrap rounded-sm">

@@ -94,14 +94,20 @@ export default function Homepage() {
                 {/* Column 1: Ages & Stages (Left Sidebar) */}
                 <div className="flex flex-col gap-4 lg:col-span-1">
                     <h3 className="text-lg font-bold text-hc-blue uppercase border-b-2 border-hc-green pb-1 mb-2">Yaş ve Gelişim</h3>
-                    {agesStages.map((stage, i) => (
-                        <Link key={i} href={`/yas-ve-gelisim#${stage.toLowerCase().replace(/ /g, '-')}`}>
-                            <div className="flex justify-between items-center text-gray-600 hover:text-hc-orange cursor-pointer border-b border-gray-100 py-3 transition-colors group">
-                                <span className="group-hover:translate-x-1 transition-transform">{stage}</span>
-                                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-hc-orange" />
-                            </div>
-                        </Link>
-                    ))}
+                    {agesStages.map((stage, i) => {
+                        const slug = stage.toLowerCase()
+                            .replace(/ /g, "-")
+                            .replace(/[ğüşıöç]/g, (c) => ({ 'ğ': 'g', 'ü': 'u', 'ş': 's', 'ı': 'i', 'ö': 'o', 'ç': 'c' }[c] || c));
+
+                        return (
+                            <Link key={i} href={`/category/${slug}`}>
+                                <div className="flex justify-between items-center text-gray-600 hover:text-hc-orange cursor-pointer border-b border-gray-100 py-3 transition-colors group">
+                                    <span className="group-hover:translate-x-1 transition-transform">{stage}</span>
+                                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-hc-orange" />
+                                </div>
+                            </Link>
+                        );
+                    })}
 
                     {/* Ad Placeholder (Sidebar) */}
                     <div className="mt-8">
