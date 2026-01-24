@@ -481,7 +481,7 @@ export default function AIWizardPage() {
                                             />
                                             {/* Quick Actions Tags */}
                                             <div className="flex flex-wrap gap-2">
-                                                {['Görseli Yenile 🖼️', 'Daha Samimi Ol 🥰', 'Tıbbi Kaynak Ekle 🩺', 'Daha Kısa Yaz ✂️'].map((tag) => (
+                                                {['Görseli Yenile 🖼️', 'Yazıyı Uzat 📝', 'Başlığı Değiştir 🏷️', 'Daha Samimi Ol 🥰', 'Tıbbi Kaynak Ekle 🩺', 'Daha Kısa Yaz ✂️'].map((tag) => (
                                                     <button
                                                         key={tag}
                                                         onClick={() => setFeedbackNotes(prev => prev ? `${prev}, ${tag}` : tag)}
