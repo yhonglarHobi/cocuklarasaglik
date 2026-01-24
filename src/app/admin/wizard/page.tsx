@@ -413,12 +413,20 @@ export default function AIWizardPage() {
                             {/* Left: Article Preview (Scrollable) */}
                             <div className="flex-1 overflow-y-auto p-8 lg:p-12 bg-white">
                                 <div className="max-w-3xl mx-auto">
-                                    {selectedDraft.image && (
+                                    {selectedDraft.image ? (
                                         <div className="mb-8 rounded-xl overflow-hidden shadow-sm aspect-video bg-gray-100 relative group">
                                             <img src={selectedDraft.image} alt={selectedDraft.title} className="w-full h-full object-cover" />
                                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                                <span className="text-white font-medium text-sm">AI Tarafından Üretildi</span>
+                                                <span className="text-white font-medium text-sm">AI Tarafından Üretildi (Google Imagen Bekleniyor)</span>
                                             </div>
+                                        </div>
+                                    ) : (
+                                        <div className="mb-8 rounded-xl overflow-hidden shadow-sm aspect-video bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center p-6 text-center group hover:border-hc-orange transition-colors">
+                                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                                <ImageIcon className="w-8 h-8 text-gray-400" />
+                                            </div>
+                                            <h3 className="text-base font-bold text-gray-700">Görsel Oluşturulamadı</h3>
+                                            <p className="text-sm text-gray-400 mt-2 max-w-xs">Bu içerik için henüz bir görsel üretilmedi. Google Imagen entegrasyonu bekleniyor.</p>
                                         </div>
                                     )}
 
