@@ -78,6 +78,7 @@ export async function reviseArticleAction(articleId: string, rating: number, not
         }
 
         // --- SAVE FEEDBACK TO DB FOR TRAINING ---
+        // @ts-ignore
         await prisma.articleFeedback.create({
             data: {
                 articleId: articleId,
