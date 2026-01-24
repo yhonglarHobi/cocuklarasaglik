@@ -9,12 +9,15 @@ import { revalidatePath } from "next/cache";
 export async function reviseArticleAction(articleId: string, rating: number, notes: string) {
     try {
         const settings = await getSystemSettings();
-        if (!settings?.apiKey) return { success: false, error: "API Anahtarı eksik." };
+        // Fallback to environment variable if DB setting is missing
+        const apiKey = settings?.apiKey || process.env.GEMINI_API_KEY;
+
+        if (!apiKey) return { success: false, error: "API Anahtarı eksik. (Env veya DB)" };
 
         const article = await prisma.article.findUnique({ where: { id: articleId } });
         if (!article) return { success: false, error: "Makale bulunamadı." };
 
-        const genAI = new GoogleGenerativeAI(settings.apiKey);
+        const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const refinementPrompt = `
