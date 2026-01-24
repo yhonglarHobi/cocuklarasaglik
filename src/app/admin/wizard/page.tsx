@@ -58,7 +58,7 @@ export default function AIWizardPage() {
     async function refreshData() {
         setIsLoadingDrafts(true);
         const dData = await getDraftArticlesAction();
-        const formattedDrafts = dData.map(d => ({
+        const formattedDrafts = dData.map((d: any) => ({
             id: d.id,
             title: d.title,
             source: "AI / Gemini",
@@ -160,7 +160,7 @@ export default function AIWizardPage() {
 
                 // Refresh data and keep modal open with new content
                 const dData = await getDraftArticlesAction();
-                const formattedDrafts = dData.map(d => ({
+                const formattedDrafts = dData.map((d: any) => ({
                     id: d.id,
                     title: d.title,
                     source: "AI / Gemini",
@@ -173,7 +173,7 @@ export default function AIWizardPage() {
                 setDrafts(formattedDrafts);
 
                 // Find and update the selected draft view
-                const updatedDraft = formattedDrafts.find(d => d.id === selectedDraft.id);
+                const updatedDraft = formattedDrafts.find((d: any) => d.id === selectedDraft.id);
                 if (updatedDraft) setSelectedDraft(updatedDraft);
 
             } else {
@@ -233,7 +233,7 @@ export default function AIWizardPage() {
                                         className="w-full p-3 border border-gray-300 rounded bg-gray-50 font-medium text-gray-700 focus:border-hc-orange outline-none"
                                     >
                                         <option value="all">🎲 Şansına Bırak (Karma)</option>
-                                        {categories.map(cat => (
+                                        {categories.map((cat: any) => (
                                             <option key={cat.id} value={cat.name}>{cat.name}</option>
                                         ))}
                                     </select>
@@ -287,7 +287,7 @@ export default function AIWizardPage() {
                                 <div className="p-8 text-center text-gray-400 text-sm">Henüz onay bekleyen taslak yok.</div>
                             ) : (
                                 <div className="divide-y divide-gray-50 max-h-[500px] overflow-y-auto">
-                                    {drafts.map((draft) => (
+                                    {drafts.map((draft: any) => (
                                         <div key={draft.id} className="p-4 hover:bg-blue-50/20 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                             <div>
                                                 <h3 className="font-bold text-gray-800 text-sm">{draft.title}</h3>
@@ -336,7 +336,7 @@ export default function AIWizardPage() {
                                 </button>
                             </div>
                             <div className="space-y-2">
-                                {categories.map((cat) => (
+                                {categories.map((cat: any) => (
                                     <div key={cat.id} className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-100 group">
                                         <span className="text-sm font-medium text-gray-700">{cat.name}</span>
                                         <button className="text-gray-400 hover:text-hc-blue opacity-0 group-hover:opacity-100 transition-opacity"><Edit2 className="w-3 h-3" /></button>
@@ -371,7 +371,7 @@ export default function AIWizardPage() {
             {/* Review Modal - ENHANCED FOR REFINEMENT LOOP */}
             {selectedDraft && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[90vh] flex flex-col overflow-hidden">
                         <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                             <div>
                                 <h3 className="font-bold text-gray-800 text-lg">{selectedDraft.title}</h3>
