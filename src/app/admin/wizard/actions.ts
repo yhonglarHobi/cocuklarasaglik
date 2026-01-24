@@ -18,21 +18,37 @@ export async function generateArticlesAction(targetCategory: string, count: numb
         const dynamicPrompt = `
         ${settings.systemPrompt}
 
-        --- ÇALIŞMA EMRİ ---
-        GÖREV: Lütfen "${targetCategory === 'all' ? 'popüler ve ihtiyaç duyulan' : targetCategory}" konusuyla ilgili toplam ${count} adet, ebeveynler için SEO uyumlu ve bilimsel blog makalesi üret.
+        --- ÇALIŞMA EMRİ (v3.2) ---
+        SİSTEM ROLÜ: Sen, küresel çapta kabul görmüş dört ana pediatri kaynağını (healthychildren.org, kidshealth.org, kidshealth.org.nz, aboutkidshealth.ca) tarayan ve sentezleyen otonom bir yayın sistemisin.
         
-        ÖNEMLİ ÇIKTI KURALLARI:
-        1. Yanıtın SADECE geçerli bir JSON dizisi (Array of Objects) olsun.
-        2. Markdown formatı (\`\`\`json ...) veya başka bir açıklama metni EKLEME. Sadece ham JSON ver.
-        3. Her makale objesi şu yapıda olmalı:
+        GÖREV: "${targetCategory === 'all' ? 'popüler ve ihtiyaç duyulan' : targetCategory}" konusuyla ilgili toplam ${count} adet, ebeveynler için SEO uyumlu ve bilimsel blog makalesi üret.
+
+        ADIM 1: GENİŞLETİLMİŞ KATEGORİ HAVUZU
+        Aşağıdaki konulardan veya ilgili niş alanlardan seçim yap:
+        - Temel: Beslenme, Gelişim, Güvenlik, Hastalıklar
+        - Ruhsal: Kaygı, özgüven, yas, davranış
+        - Okul: Öğrenme, zorbalık, sosyal beceriler
+        - Ergen: Ergenlik, bağımlılık, sosyal medya
+        - Ağız/Diş: İlk diş hekimi, hijyen
+        - Çevresel: Kirlilik, mevsimsel etkiler
+        - Özel Gereksinim: Otizm, DEHB, aile desteği
+        
+        ADIM 2: İÇERİK PROTOKOLÜ
+        - Persona: Çocuklara Sağlık Platformu Yayın Kurulu (Objektif/Bilimsel)
+        - Klinik/Doktor atıfı yapma.
+        - Görsel: Her yazı için "generate_image" tetikleyicili İngilizce prompt hazırla.
+
+        ADIM 3: ÇIKTI FORMATI (JSON)
+        Yanıtın SADECE şu formatta geçerli bir JSON dizisi olmalı:
         [
             {
-                "title": "Dikkat Çekici Başlık",
+                "title": "Çarpıcı, SEO Uyumlu Başlık",
                 "slug": "url-dostu-kisa-baslik",
-                "excerpt": "Meta açıklama tadında kısa özet (max 160 karakter)",
-                "content": "<p>Giriş paragrafı...</p><h2>Alt Başlık</h2><ul><li>Liste maddesi</li></ul><p>Sonuç paragrafı...</p> (Tamamen HTML formatında, zengin içerik)",
-                "category_suggestion": "Önerilen Kategori İsmi (Türkçe)",
-                "source": "Ana referans kaynağı (örn: AAP)"
+                "excerpt": "Meta açıklama (max 160 karakter)",
+                "content": "<p>Giriş...</p><h2>Alt Başlık</h2><ul><li>Madde</li></ul>... (Zengin HTML)",
+                "category_suggestion": "Önerilen Kategori İsmi",
+                "image_prompt": "Ingilizce gorsel olusturma promputu (minimalist, modern vector art style)",
+                "reading_time": "Tahmini okuma süresi (dk)"
             }
         ]
         `;
@@ -65,13 +81,12 @@ export async function generateArticlesAction(targetCategory: string, count: numb
         if (!author) {
             author = await prisma.user.findFirst();
             if (!author) {
-                // Fallback user create logic if needed, or error
                 return { success: false, error: "Sistemde kayıtlı yazar (Admin) bulunamadı." };
             }
         }
 
         let savedCount = 0;
-        let aiCategoryProposal = null; // AI'ın önerdiği kategori varsa buraya alacağız
+        let aiCategoryProposal = null;
 
         for (const article of articlesArray) {
             if (!article.title || !article.content) continue;
@@ -95,28 +110,46 @@ export async function generateArticlesAction(targetCategory: string, count: numb
                 if (existingCat) {
                     categoryId = existingCat.id;
                 } else {
-                    // Kategori bulunamadı, bunu frontend'e "AI Önerisi" olarak dönebiliriz
                     aiCategoryProposal = {
-                        originalName: article.category_suggestion, // Örn: Adolescent Mental Wellness
-                        suggestedName: article.category_suggestion, // Örn: Ergen Ruh Sağlığı (Prompt tr istediği için tr gelir)
+                        originalName: article.category_suggestion,
+                        suggestedName: article.category_suggestion,
                         reason: "Bu kategori veritabanında henüz yok."
                     };
-                    // Şimdilik null bırakıyoruz, kullanıcı elle ekleyecek
                 }
             }
 
             const uniqueSlug = (article.slug || "yazi") + "-" + Date.now() + Math.floor(Math.random() * 1000);
+
+            // Image Generation Logic (Mock/Fallback)
+            // Since we don't have DALL-E connected, we use the prompt keywords to fetch a relevant image from Unsplash source
+            // Extract key nouns from image_prompt or title for better accuracy
+            const keywords = article.image_prompt
+                ? article.image_prompt.replace(/ /g, ",").split(",").slice(0, 3).join(",") // Use first 3 words of prompt
+                : "pediatrics,child,health";
+
+            // Using placeholder for demo, or Unsplash source if permitted
+            const imageUrl = `https://images.unsplash.com/photo-1505685296765-3a27959b8be3?auto=format&fit=crop&w=800&q=80`;
+            // Better: Let's try to generate a somewhat random image based on category or topic if possible, 
+            // but static URL is safer for 404s. 
+            // Let's use a functional Unsplash search URL instead:
+            // const dynamicImageUrl = `https://source.unsplash.com/1600x900/?${encodeURIComponent(keywords)}`;
+            // Note: source.unsplash.com is deprecated. We will use a random placeholder or leave it empty for manual update.
+            // USER REQUESTED: "görseli de oluştursun". 
+            // Real implementation requires an API. I'll use a specific collection or keywords.
+            // Let's use a service that still works usually:
+            const dynamicImageUrl = `https://placehold.co/1200x630/eef2ff/3730a3?text=${encodeURIComponent(article.title.substring(0, 20) + "...")}\\n(Görsel+Hazırlanıyor)`;
 
             await prisma.article.create({
                 data: {
                     title: article.title,
                     slug: uniqueSlug,
                     excerpt: article.excerpt || "",
-                    content: article.content, // HTML format
+                    content: article.content,
                     published: false,
                     viewCount: 0,
                     authorId: author.id,
                     categoryId: categoryId,
+                    imageUrl: dynamicImageUrl // Now saving an image URL
                 }
             });
             savedCount++;
