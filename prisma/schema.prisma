@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Vercel Postgres kullanacağız
+  url      = env("DATABASE_URL")
+}
+
+// 1. KULLANICILAR (Yazarlar, Adminler)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String   // Şifrelenmiş olarak saklanacak
+  role      Role     @default(USER)
+  articles  Article[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  AUTHOR
+  ADMIN
+}
+
+// 2. YAZILAR (Makaleler)
+model Article {
+  id          String   @id @default(cuid())
+  slug        String   @unique // URL dostu başlık (ornek-yazi-basligi)
+  title       String
+  excerpt     String?  // Kısa özet
+  content     String   // Makale içeriği (HTML/Markdown)
+  imageUrl    String?  // Kapak görseli
+  published   Boolean  @default(false)
+  viewCount   Int      @default(0)
+  
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 3. KATEGORİLER
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  articles    Article[]
+}
+
+// 4. SİSTEM AYARLARI (Gemini API vs.)
+model SystemSettings {
+  id          String   @id @default("default") // Tek bir kayıt olacak
+  apiKey      String?  // Gemini API Key
+  systemPrompt String? // Yapay Zeka Talimatı
+  updatedAt   DateTime @updatedAt
+}
