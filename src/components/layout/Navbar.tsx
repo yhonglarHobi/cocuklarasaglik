@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Search, Menu, X } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const defaultNavLinks = [
     { name: "Yaş ve Gelişim", href: "/yas-ve-gelisim" },
@@ -17,6 +18,15 @@ interface NavbarProps {
 export function Navbar({ menuItems }: NavbarProps) {
     const links = (menuItems && menuItems.length > 0) ? menuItems : defaultNavLinks;
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const router = useRouter();
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        }
+    };
 
     return (
         <div className="flex flex-col w-full font-sans relative">
@@ -68,18 +78,20 @@ export function Navbar({ menuItems }: NavbarProps) {
                     </button>
                 </div>
 
-                {/* Search & Donate (Hidden on very small screens or moved) */}
+                {/* Search & Donate */}
                 <div className="flex items-center gap-4 w-full md:w-auto">
-                    <div className="flex h-10 w-full md:w-80 border border-gray-300 rounded-sm overflow-hidden">
+                    <form onSubmit={handleSearch} className="flex h-10 w-full md:w-80 border border-gray-300 rounded-sm overflow-hidden">
                         <input
                             type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Hastalık, aşı, belirti arayın..."
                             className="flex-1 px-3 text-sm outline-none text-gray-600 placeholder:text-gray-400 font-sans"
                         />
-                        <button className="bg-hc-orange/70 w-10 flex items-center justify-center hover:bg-hc-orange text-white">
+                        <button type="submit" className="bg-hc-orange/70 w-10 flex items-center justify-center hover:bg-hc-orange text-white">
                             <Search className="w-4 h-4" />
                         </button>
-                    </div>
+                    </form>
                     <button className="h-10 px-6 bg-hc-blue text-white font-bold text-sm uppercase tracking-wider hover:bg-blue-800 transition-colors hidden md:block whitespace-nowrap rounded-sm">
                         BAĞIŞ YAP
                     </button>
