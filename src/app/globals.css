@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  /* HealthyChildren.org Palette */
+  --color-hc-orange: #f39200;
+  /* Dominant orange */
+  --color-hc-blue: #004d86;
+  /* Deep blue text/buttons */
+  --color-hc-green: #6cbe45;
+  /* Green accents */
+  --color-hc-red: #e31837;
+  /* Alert red */
+  --color-hc-text: #444444;
+  /* Body text */
+  --color-hc-light: #f9f9f9;
+
+  /* Semantic Aliases */
+  --color-brand: var(--color-hc-orange);
+  --color-accent: var(--color-hc-blue);
+
+  /* Fonts */
+  --font-serif: 'Georgia', 'Times New Roman', serif;
+  --font-sans: 'Inter', 'Arial', sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: white;
+    color: var(--color-hc-text);
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+    color: #4a4a4a;
+    line-height: 1.2;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    /* ~28px Mobile */
+  }
+
+  @media (min-width: 768px) {
+    h1 {
+      font-size: 2.5rem;
+      /* ~40px Desktop */
+    }
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    /* ~24px Mobile */
+  }
+
+  @media (min-width: 768px) {
+    h2 {
+      font-size: 2rem;
+      /* ~32px Desktop */
+    }
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
+
+  @media (min-width: 768px) {
+    h3 {
+      font-size: 1.50rem;
+    }
+  }
+}
