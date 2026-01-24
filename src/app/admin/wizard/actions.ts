@@ -19,7 +19,7 @@ export async function generateArticlesAction(targetCategory: string, count: numb
 
         // 2. Gemini Başlat
         const genAI = new GoogleGenerativeAI(settings.apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }); // Hızlı ve ekonomik model
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Daha stabil model
 
         // 3. Dinamik Prompt Hazırla
         const dynamicPrompt = `
