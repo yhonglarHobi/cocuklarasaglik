@@ -37,6 +37,9 @@ export async function generateArticlesAction(targetCategory: string, count: numb
         - Persona: Çocuklara Sağlık Platformu Yayın Kurulu (Objektif/Bilimsel)
         - Klinik/Doktor atıfı yapma.
         - Görsel: Her yazı için "generate_image" tetikleyicili İngilizce prompt hazırla.
+        
+        --- İÇERİK OLUŞTURMA KURALLARI ---
+        - Makale sonuna "Kaynaklar", "Referanslar" veya "Destek Kaynakları" gibi bir liste ASLA EKLEME. Kaynakları sadece metin içinde dolaylı olarak (örn: "Amerikan Pediatri Akademisi'ne göre...") kullan.
 
         ADIM 3: ÇIKTI FORMATI (JSON)
         Yanıtın SADECE şu formatta geçerli bir JSON dizisi olmalı:
@@ -120,24 +123,9 @@ export async function generateArticlesAction(targetCategory: string, count: numb
 
             const uniqueSlug = (article.slug || "yazi") + "-" + Date.now() + Math.floor(Math.random() * 1000);
 
-            // Image Generation Logic (Mock/Fallback)
-            // Since we don't have DALL-E connected, we use the prompt keywords to fetch a relevant image from Unsplash source
-            // Extract key nouns from image_prompt or title for better accuracy
-            const keywords = article.image_prompt
-                ? article.image_prompt.replace(/ /g, ",").split(",").slice(0, 3).join(",") // Use first 3 words of prompt
-                : "pediatrics,child,health";
-
-            // Using placeholder for demo, or Unsplash source if permitted
-            const imageUrl = `https://images.unsplash.com/photo-1505685296765-3a27959b8be3?auto=format&fit=crop&w=800&q=80`;
-            // Better: Let's try to generate a somewhat random image based on category or topic if possible, 
-            // but static URL is safer for 404s. 
-            // Let's use a functional Unsplash search URL instead:
-            // const dynamicImageUrl = `https://source.unsplash.com/1600x900/?${encodeURIComponent(keywords)}`;
-            // Note: source.unsplash.com is deprecated. We will use a random placeholder or leave it empty for manual update.
-            // USER REQUESTED: "görseli de oluştursun". 
-            // Real implementation requires an API. I'll use a specific collection or keywords.
-            // Let's use a service that still works usually:
-            const dynamicImageUrl = `https://placehold.co/1200x630/eef2ff/3730a3?text=${encodeURIComponent(article.title.substring(0, 20) + "...")}\\n(Görsel+Hazırlanıyor)`;
+            // Image Generation Logic (Random Real Image)
+            // Use a random reliable image from Unsplash manually selected or Picsum seed
+            const finalImage = `https://picsum.photos/seed/${uniqueSlug}/800/400`;
 
             await prisma.article.create({
                 data: {
@@ -149,7 +137,7 @@ export async function generateArticlesAction(targetCategory: string, count: numb
                     viewCount: 0,
                     authorId: author.id,
                     categoryId: categoryId,
-                    imageUrl: dynamicImageUrl // Now saving an image URL
+                    imageUrl: finalImage
                 }
             });
             savedCount++;
