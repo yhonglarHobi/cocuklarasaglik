@@ -64,3 +64,13 @@ model SystemSettings {
   systemPrompt String? // Yapay Zeka Talimatı
   updatedAt   DateTime @updatedAt
 }
+
+// 5. MENÜ YÖNETİMİ
+model MenuItem {
+  id        String   @id @default(cuid())
+  name      String
+  href      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

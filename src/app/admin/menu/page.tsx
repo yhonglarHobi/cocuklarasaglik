@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Menu,
     Move,
@@ -9,24 +9,39 @@ import {
     Edit2,
     Save,
     X,
-    ExternalLink
+    ExternalLink,
+    Loader
 } from "lucide-react";
+import { getMenuItems, updateMenuItems } from "./actions";
 
 export default function MenuManagementPage() {
-    const [menuItems, setMenuItems] = useState([
-        { id: 1, name: "Yaş ve Gelişim", href: "/yas-ve-gelisim", order: 1 },
-        { id: 2, name: "Sağlıklı Yaşam", href: "/saglikli-yasam", order: 2 },
-        { id: 3, name: "Güvenlik & Önleme", href: "/guvenlik", order: 3 },
-        { id: 4, name: "Aile Hayatı", href: "/aile-hayati", order: 4 },
-        { id: 5, name: "Sağlık Sorunları", href: "/saglik-sorunlari", order: 5 },
-        { id: 6, name: "Haberler", href: "/haberler", order: 6 },
-        { id: 7, name: "İpuçları & Araçlar", href: "/ipuclari", order: 7 },
-        { id: 8, name: "Hakkımızda", href: "/hakkimizda", order: 8 },
-    ]);
+    const [menuItems, setMenuItems] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     const [isAdding, setIsAdding] = useState(false);
     const [newMenu, setNewMenu] = useState({ name: "", href: "" });
     const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        loadItems();
+    }, []);
+
+    const loadItems = async () => {
+        setIsLoading(true);
+        const items = await getMenuItems();
+        if (items && items.length > 0) {
+            setMenuItems(items);
+        } else {
+            // If DB is empty, maybe set default? Or just leave empty.
+            // Let's set the default list client-side if DB is empty for initial run user experience
+            setMenuItems([
+                { id: "1", name: "Yaş ve Gelişim", href: "/yas-ve-gelisim", order: 1 },
+                { id: "2", name: "Sağlıklı Yaşam", href: "/saglikli-yasam", order: 2 },
+                { id: "3", name: "Haberler", href: "/haberler", order: 3 },
+            ]);
+        }
+        setIsLoading(false);
+    };
 
     // Drag simulation (just swapping logic for UI demo without dnd library)
     const moveItem = (index: number, direction: 'up' | 'down') => {
@@ -39,18 +54,36 @@ export default function MenuManagementPage() {
         setMenuItems(newItems);
     };
 
-    const deleteItem = (id: number) => {
+    const deleteItem = (id: number | string) => {
         setMenuItems(menuItems.filter(item => item.id !== id));
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         setIsSaving(true);
-        setTimeout(() => setIsSaving(false), 1000);
+
+        // Prepare items for DB (remove IDs if they are temporary numbers, or just send name/href/order)
+        const itemsToSave = menuItems.map((item, index) => ({
+            name: item.name,
+            href: item.href,
+            order: index + 1
+        }));
+
+        const result = await updateMenuItems(itemsToSave);
+
+        if (result.success) {
+            // Reload to get real IDs back
+            await loadItems();
+            alert("Menü başarıyla güncellendi! ✅");
+        } else {
+            alert("Hata: " + result.error);
+        }
+
+        setIsSaving(false);
     };
 
     const addNewItem = () => {
         if (newMenu.name && newMenu.href) {
-            setMenuItems([...menuItems, { id: Date.now(), name: newMenu.name, href: newMenu.href, order: menuItems.length + 1 }]);
+            setMenuItems([...menuItems, { id: "temp-" + Date.now(), name: newMenu.name, href: newMenu.href, order: menuItems.length + 1 }]);
             setNewMenu({ name: "", href: "" });
             setIsAdding(false);
         }
@@ -93,44 +126,51 @@ export default function MenuManagementPage() {
                     </div>
 
                     {/* Menu Items */}
-                    <div className="divide-y divide-gray-100">
-                        {menuItems.map((item, index) => (
-                            <div key={item.id} className="p-4 flex items-center hover:bg-blue-50/10 transition-colors group">
+                    {isLoading ? (
+                        <div className="p-8 text-center text-gray-500 flex flex-col items-center">
+                            <Loader className="w-8 h-8 animate-spin mb-2" />
+                            Menü yükleniyor...
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-gray-100">
+                            {menuItems.map((item, index) => (
+                                <div key={item.id} className="p-4 flex items-center hover:bg-blue-50/10 transition-colors group">
 
-                                {/* Drag Handle / Order */}
-                                <div className="w-12 flex flex-col items-center gap-1 text-gray-400">
-                                    <button onClick={() => moveItem(index, 'up')} disabled={index === 0} className="hover:text-hc-blue disabled:opacity-30">▲</button>
-                                    <button onClick={() => moveItem(index, 'down')} disabled={index === menuItems.length - 1} className="hover:text-hc-blue disabled:opacity-30">▼</button>
-                                </div>
+                                    {/* Drag Handle / Order */}
+                                    <div className="w-12 flex flex-col items-center gap-1 text-gray-400">
+                                        <button onClick={() => moveItem(index, 'up')} disabled={index === 0} className="hover:text-hc-blue disabled:opacity-30">▲</button>
+                                        <button onClick={() => moveItem(index, 'down')} disabled={index === menuItems.length - 1} className="hover:text-hc-blue disabled:opacity-30">▼</button>
+                                    </div>
 
-                                {/* Name Input */}
-                                <div className="flex-1 pr-4">
-                                    <div className="font-bold text-gray-700 flex items-center gap-2">
-                                        {item.name}
-                                        <Edit2 className="w-3 h-3 text-gray-300 cursor-pointer hover:text-hc-blue opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    {/* Name Input */}
+                                    <div className="flex-1 pr-4">
+                                        <div className="font-bold text-gray-700 flex items-center gap-2">
+                                            {item.name}
+                                            <Edit2 className="w-3 h-3 text-gray-300 cursor-pointer hover:text-hc-blue opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </div>
+                                    </div>
+
+                                    {/* Href Input */}
+                                    <div className="flex-1 pr-4">
+                                        <div className="text-sm text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded border border-gray-200 inline-flex items-center gap-2">
+                                            {item.href}
+                                            <ExternalLink className="w-3 h-3 text-gray-400" />
+                                        </div>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="w-24 flex justify-end">
+                                        <button
+                                            onClick={() => deleteItem(item.id)}
+                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
-
-                                {/* Href Input */}
-                                <div className="flex-1 pr-4">
-                                    <div className="text-sm text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded border border-gray-200 inline-flex items-center gap-2">
-                                        {item.href}
-                                        <ExternalLink className="w-3 h-3 text-gray-400" />
-                                    </div>
-                                </div>
-
-                                {/* Actions */}
-                                <div className="w-24 flex justify-end">
-                                    <button
-                                        onClick={() => deleteItem(item.id)}
-                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Add New Item Row */}
                     {isAdding ? (

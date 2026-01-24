@@ -2,21 +2,24 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google"; // Keeping fonts
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
+import { getMenuItems } from "@/app/admin/menu/actions";
 
 export const metadata: Metadata = {
   title: "CocuklaraSaglik.com - Türkiye'nin Pediatri Portalı",
   description: "Pediatristler tarafından doğrulanan güvenilir çocuk sağlığı bilgileri.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const menuItems = await getMenuItems();
+
   return (
     <html lang="tr">
       <body className="antialiased min-h-screen flex flex-col bg-white">
-        <Navbar />
+        <Navbar menuItems={menuItems} />
         <main className="flex-1 w-full max-w-[1100px] mx-auto bg-white shadow-sm my-4 min-h-[500px] px-0 md:px-0">
           {children}
         </main>

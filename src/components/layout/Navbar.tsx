@@ -4,18 +4,18 @@ import React, { useState } from "react";
 import { Search, Menu, X } from "lucide-react";
 import Link from "next/link";
 
-const navLinks = [
+const defaultNavLinks = [
     { name: "Yaş ve Gelişim", href: "/yas-ve-gelisim" },
     { name: "Sağlıklı Yaşam", href: "/saglikli-yasam" },
-    { name: "Güvenlik & Önleme", href: "/guvenlik" },
-    { name: "Aile Hayatı", href: "/aile-hayati" },
-    { name: "Sağlık Sorunları", href: "/saglik-sorunlari" },
     { name: "Haberler", href: "/haberler" },
-    { name: "İpuçları & Araçlar", href: "/ipuclari" },
-    { name: "Hakkımızda", href: "/hakkimizda" },
 ];
 
-export function Navbar() {
+interface NavbarProps {
+    menuItems?: { name: string; href: string }[];
+}
+
+export function Navbar({ menuItems }: NavbarProps) {
+    const links = (menuItems && menuItems.length > 0) ? menuItems : defaultNavLinks;
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     return (
@@ -89,7 +89,7 @@ export function Navbar() {
             {/* Navigation Links (Desktop) */}
             <nav className="border-t border-b border-gray-200 py-3 bg-white sticky top-0 z-40 shadow-sm hidden md:block">
                 <div className="max-w-[1100px] mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-bold text-[#555555] px-4">
-                    {navLinks.map((link) => (
+                    {links.map((link) => (
                         <Link key={link.href} href={link.href} className="hover:text-hc-orange hover:underline decoration-2 underline-offset-4 transition-colors uppercase">
                             {link.name}
                         </Link>
@@ -101,7 +101,7 @@ export function Navbar() {
             {isMobileMenuOpen && (
                 <div className="bg-white border-b border-gray-200 py-4 px-4 md:hidden absolute w-full z-50 shadow-xl top-full animate-in slide-in-from-top-5">
                     <div className="flex flex-col gap-2">
-                        {navLinks.map((link) => (
+                        {links.map((link) => (
                             <Link
                                 key={link.href}
                                 href={link.href}
