@@ -52,16 +52,7 @@ export default async function RootLayout({
           </div>
         </footer>
 
-        {/* Floating Social Sidebar */}
-        <div className="fixed right-0 top-1/2 -translate-y-1/2 z-50 hidden lg:flex flex-col shadow-lg bg-white rounded-l-lg overflow-hidden border border-gray-100">
-          <div className="bg-[#f0f0f0] p-2 text-[10px] font-bold text-gray-500 text-center border-b border-gray-200 uppercase tracking-widest writing-vertical-lr py-4">
-            Takip Et
-          </div>
-          <a href="#" className="p-3 hover:bg-red-50 text-red-600 transition-colors flex justify-center"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M22.5 6h-6.8c-.6 0-1.1.5-1.1 1.1v3.4h2.3c.4 0 .8.4.8.9v2.2c0 .5-.4.9-.9.9h-2.3v8.4c0 .6-.5 1.1-1.1 1.1H10c-.6 0-1.1-.5-1.1-1.1v-8.4H7.1c-.5 0-.9-.4-.9-.9v-2.2c0-.5.4-.9.9-.9h1.8V7.1C9 3.2 12.1 0 16.1 0h6.4c.5 0 .9.5.9 1V5c0 .6-.4 1.1-.9 1.1z" /></svg></a>
-          <a href="#" className="p-3 hover:bg-pink-50 text-pink-600 transition-colors flex justify-center"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 3.3.1 4.8 1.7 4.9 4.9.1 1.3.1 1.6.1 4.8 0 3.2 0 3.6-.1 4.9-.1 3.3-1.7 4.8-4.9 4.9-1.3.1-1.6.1-4.8.1-3.2 0-3.6 0-4.9-.1-3.3-.1-4.8-1.7-4.9-4.9-.1-1.3-.1-1.6-.1-4.8 0-3.2 0-3.6.1-4.9.1-3.3 1.7-4.8 4.9-4.9 1.3-.1 1.6-.1 4.8-.1zm0-2.2C8.7 0 8.3 0 7.1.1 2.8.3.3 2.8.1 7.1 0 8.3 0 8.7 0 12s0 3.7.1 4.9c.2 4.4 2.7 6.8 7.1 7.1 1.2.1 1.6.1 4.9.1s3.7 0 4.9-.1c4.4-.2 6.8-2.7 7.1-7.1.1-1.2.1-1.6.1-4.9s0-3.7-.1-4.9c-.2-4.4-2.7-6.8-7.1-7.1C15.7 0 15.3 0 12 0zm0 5.8a6.2 6.2 0 1 0 0 12.4 6.2 6.2 0 0 0 0-12.4zm0 10.2a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.5-10.8a1.4 1.4 0 1 1 0 2.9 1.4 1.4 0 0 1 0-2.9z" /></svg></a>
-          <a href="#" className="p-3 hover:bg-blue-50 text-blue-500 transition-colors flex justify-center"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.6c-.9.4-1.8.7-2.8.8 1-.6 1.8-1.6 2.2-2.7-1 .6-2 1-3.1 1.2-1-.1-1.9-.3-2.8-.5-.9-.2-1.8-.4-2.8-.4-1.4 0-2.7.5-3.7 1.5-1 1-1.6 2.3-1.6 3.8 0 .4 0 .8.1 1.2C3.9 9.3 1.9 6.8.8 3.5c-.3.6-.5 1.3-.5 2 0 1.9 1 3.6 2.4 4.5-.9 0-1.7-.3-2.4-.7 0 2.6 1.9 4.8 4.3 5.3-.5.1-.9.2-1.4.2-.3 0-.7 0-1-.1.7 2.2 2.7 3.8 5.1 3.9-2 1.5-4.4 2.4-7 2.4-.5 0-.9 0-1.4-.1 2.5 1.6 5.5 2.5 8.7 2.5 10.4 0 16.1-8.6 16.1-16.1 0-.2 0-.5 0-.7.9-.9 1.8-1.9 2.5-3z" /></svg></a>
-          <a href="#" className="p-3 hover:bg-red-50 text-red-600 transition-colors flex justify-center"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.5 6.2c-.3 0-2.4-.2-4.8-.2-1.6 0-2.4.4-3.5 1.7-.8 1-1.2 2.4-1.2 4.3v1.8H9.3v3.8h4.7v10.3h4.4v-10.3h3.5l.5-3.8h-4v-1.4c0-1 .2-1.4.6-1.6.3-.1 1-.2 2.3-.2h2.2V6.2z" /></svg></a>
-        </div>
+
       </body>
     </html>
   );

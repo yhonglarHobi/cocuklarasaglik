@@ -68,13 +68,12 @@ export async function reviseArticleAction(articleId: string, rating: number, not
         };
 
         // Handle Image Update if prompt exists
+        // Handle Image Update if prompt exists
         if (revisedData.image_prompt) {
-            // Use Pollinations AI for new image
-            const uniqueSlug = article.slug;
-            const basePrompt = revisedData.image_prompt;
-            const enhancedPrompt = `${basePrompt}, realistic, 8k, highly detailed, professional photography, soft lighting, pediatric context`.substring(0, 300);
-            const dynamicImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1200&height=630&nologo=true&seed=${Date.now()}`; // Use Date.now for fresh seed
-            updateData.imageUrl = dynamicImageUrl;
+            // TODO: Integrate Google Imagen API here as per user request.
+            // Pollinations AI has been removed.
+            // For now, we do not update the image automatically to avoid using external non-Google services.
+            console.log("Image prompt generated but image generation skipped (waiting for Google Imagen integration):", revisedData.image_prompt);
         }
 
         // --- SAVE FEEDBACK TO DB FOR TRAINING ---
