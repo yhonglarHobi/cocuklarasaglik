@@ -70,41 +70,89 @@ export async function reviseArticleAction(articleId: string, rating: number, not
             content: revisedData.content,
         };
 
-        // --- INTELLIGENT IMAGE HANDLING ---
+        // --- VERTEX AI IMAGEN INTEGRATION ---
         if (revisedData.image_prompt) {
-            // Helper function: Extract meaningful keywords and translate Turkish to English
-            const extractKeywords = (prompt: string): string => {
-                // Common pediatric terms: Turkish → English mapping
-                const trToEn: Record<string, string> = {
-                    'bebek': 'baby', 'çocuk': 'child', 'anne': 'mother', 'baba': 'father',
-                    'emzirme': 'breastfeeding', 'uyku': 'sleep', 'oyun': 'play',
-                    'gelişim': 'development', 'motor': 'motor', 'sağlık': 'health',
-                    'doktor': 'doctor', 'hastane': 'hospital', 'sürünme': 'crawling',
-                    'yürüme': 'walking', 'beslenme': 'nutrition', 'aşı': 'vaccination'
-                };
+            try {
+                const VERTEX_API_KEY = process.env.VERTEX_API_KEY;
+                const VERTEX_PROJECT_ID = process.env.VERTEX_PROJECT_ID;
+                const VERTEX_REGION = process.env.VERTEX_REGION || 'us-central1';
 
-                let processed = prompt.toLowerCase();
+                if (VERTEX_API_KEY && VERTEX_PROJECT_ID) {
+                    // Google Vertex AI Imagen endpoint
+                    const endpoint = `https://${VERTEX_REGION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_REGION}/publishers/google/models/imagegeneration@006:predict`;
 
-                // Replace Turkish words with English equivalents
-                Object.entries(trToEn).forEach(([tr, en]) => {
-                    processed = processed.replace(new RegExp(`\\b${tr}\\b`, 'g'), en);
-                });
+                    // Prepare enhanced prompt for pediatric context
+                    const enhancedPrompt = `${revisedData.image_prompt}, warm lighting, family-friendly, realistic photograph, professional quality, safe for children`;
 
-                // Remove filler/marketing words
-                const stopWords = ['realistic', 'photograph', 'photography', 'image', 'photo', 'picture', 'professional', 'high', 'quality', 've', 'the', 'a', 'an', 'of'];
-                const words = processed
-                    .replace(/[.,!?;:()]/g, ' ')
-                    .split(/\s+/)
-                    .filter(w => w.length > 2 && !stopWords.includes(w));
+                    console.log('🎨 Generating image with Vertex AI Imagen:', enhancedPrompt);
 
-                // Return top 3-4 keywords
-                return words.slice(0, 4).join(',') || 'child,health';
-            };
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${VERTEX_API_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            instances: [{
+                                prompt: enhancedPrompt
+                            }],
+                            parameters: {
+                                sampleCount: 1,
+                                aspectRatio: "16:9",
+                                safetyFilterLevel: "block_some",
+                                personGeneration: "allow_adult"
+                            }
+                        })
+                    });
 
-            const keywords = extractKeywords(revisedData.image_prompt);
-            // Unsplash Source API (still functional): Real stock photos matching keywords
-            const dynamicImageUrl = `https://source.unsplash.com/1200x630/?${keywords}&sig=${Date.now()}`;
-            updateData.imageUrl = dynamicImageUrl;
+                    if (response.ok) {
+                        const data = await response.json();
+
+                        if (data.predictions && data.predictions[0]) {
+                            const base64Image = data.predictions[0].bytesBase64Encoded;
+
+                            // Save image to public/generated folder
+                            const fs = await import('fs');
+                            const path = await import('path');
+
+                            const outputDir = path.join(process.cwd(), 'public', 'generated');
+                            if (!fs.existsSync(outputDir)) {
+                                fs.mkdirSync(outputDir, { recursive: true });
+                            }
+
+                            const filename = `article-${articleId}-${Date.now()}.png`;
+                            const filepath = path.join(outputDir, filename);
+
+                            const imageBuffer = Buffer.from(base64Image, 'base64');
+                            fs.writeFileSync(filepath, imageBuffer);
+
+                            updateData.imageUrl = `/generated/${filename}`;
+                            console.log('✅ Vertex AI image saved:', updateData.imageUrl);
+                        } else {
+                            console.warn('⚠️ No image in Vertex response, falling back to Unsplash');
+                            // Fallback to Unsplash
+                            const keywords = revisedData.image_prompt.split(' ').slice(0, 4).join(',');
+                            updateData.imageUrl = `https://source.unsplash.com/1200x630/?${keywords}&sig=${Date.now()}`;
+                        }
+                    } else {
+                        const error = await response.text();
+                        console.error('❌ Vertex AI Error:', response.status, error);
+                        // Fallback to Unsplash
+                        const keywords = revisedData.image_prompt.split(' ').slice(0, 4).join(',');
+                        updateData.imageUrl = `https://source.unsplash.com/1200x630/?${keywords}&sig=${Date.now()}`;
+                    }
+                } else {
+                    console.warn('⚠️ Vertex AI credentials missing, using Unsplash');
+                    // Fallback to Unsplash
+                    const keywords = revisedData.image_prompt.split(' ').slice(0, 4).join(',');
+                    updateData.imageUrl = `https://source.unsplash.com/1200x630/?${keywords}&sig=${Date.now()}`;
+                }
+            } catch (error) {
+                console.error('❌ Image generation error:', error);
+                // Fallback to Unsplash on any error
+                const keywords = revisedData.image_prompt.split(' ').slice(0, 4).join(',');
+                updateData.imageUrl = `https://source.unsplash.com/1200x630/?${keywords}&sig=${Date.now()}`;
+            }
         }
 
         // --- SAVE FEEDBACK TO DB FOR TRAINING ---
