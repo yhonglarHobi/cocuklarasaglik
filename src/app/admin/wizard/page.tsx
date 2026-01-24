@@ -133,7 +133,7 @@ export default function AIWizardPage() {
                 {/* Header */}
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-serif font-bold text-[#5c4a3d] flex items-center gap-3">
+                        <h1 className="text-3xl font-sans font-bold text-gray-900 tracking-tight flex items-center gap-3">
                             <Zap className="w-8 h-8 text-hc-orange" fill="currentColor" />
                             AI İçerik Sihirbazı
                         </h1>
@@ -168,7 +168,7 @@ export default function AIWizardPage() {
 
                         {/* Targeted Generation Card */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 relative overflow-hidden">
-                            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                            <h2 className="text-xl font-sans font-bold text-gray-900 mb-6 flex items-center gap-2 tracking-tight">
                                 <Target className="w-5 h-5 text-hc-blue" />
                                 Hedefli İçerik Üretimi
                             </h2>
@@ -248,7 +248,7 @@ export default function AIWizardPage() {
                         {/* Drafts Queue */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                                <h2 className="font-bold text-gray-800 flex items-center gap-2">
+                                <h2 className="font-sans font-bold text-gray-900 flex items-center gap-2 tracking-tight">
                                     <FileText className="w-5 h-5 text-gray-400" />
                                     Onay Bekleyen Taslaklar
                                     <span className="bg-hc-blue text-white text-xs px-2 py-0.5 rounded-full">{drafts.length}</span>
@@ -294,7 +294,7 @@ export default function AIWizardPage() {
 
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                             <div className="flex justify-between items-center mb-4">
-                                <h2 className="font-bold text-gray-800">Kategori Yönetimi</h2>
+                                <h2 className="font-sans font-bold text-gray-900 tracking-tight">Kategori Yönetimi</h2>
                                 <button
                                     onClick={() => setShowCategoryModal(true)}
                                     className="bg-gray-100 p-1.5 rounded hover:bg-gray-200 text-gray-600 transition-colors"
