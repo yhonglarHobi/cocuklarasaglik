@@ -21,7 +21,8 @@ import {
     AlertTriangle,
     RefreshCw, // New Icon
     MessageSquare, // New Icon
-    ThumbsUp // New Icon
+    ThumbsUp, // New Icon
+    Image as ImageIcon
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
