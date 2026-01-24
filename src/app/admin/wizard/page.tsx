@@ -136,7 +136,7 @@ export default function AIWizardPage() {
             await refreshData();
             if (selectedDraft?.id === id) setSelectedDraft(null);
         } else {
-            toast.error("Yayınlama başarısız oldu.");
+            toast.error(`Yayınlama başarısız oldu: ${res.error || "Bilinmeyen hata"}`);
         }
     };
 

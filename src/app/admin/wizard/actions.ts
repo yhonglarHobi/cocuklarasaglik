@@ -278,7 +278,8 @@ export async function publishArticleAction(id: string) {
         revalidatePath("/"); // Ana sayfayı da güncelle
         return { success: true };
     } catch (error) {
-        return { success: false };
+        console.error("Publishing Error:", error);
+        return { success: false, error: String(error) };
     }
 }
 
