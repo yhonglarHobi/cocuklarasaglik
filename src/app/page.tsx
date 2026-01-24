@@ -16,9 +16,30 @@ const DEFAULT_CATEGORIES = [
     "Genç Yetişkin"
 ];
 
-// ... (Articles mock data remains if you want, or remove if unused)
+// Mock Data Translations (Fallback if DB is empty)
+const mockArticles = [
+    {
+        id: "1",
+        title: "Yenidoğan Sarılığı: Ne Zaman Endişelenmeli?",
+        summary: "Bebeklerde sık görülen fizyolojik sarılık ile patolojik sarılık arasındaki farklar ve tedavi yöntemleri.",
+        category: "urgent" as const,
+        readTime: "4 dk",
+        ageGroup: "Yaş ve Gelişim: Bebek",
+        isDoctorApproved: true,
+    },
+    {
+        id: "3",
+        title: "Ateşli Çocuğa Yaklaşım: Evde İlk Yardım",
+        summary: "38 derece ve üzeri ateş durumunda yapılması gerekenler ve ilaç kullanımı.",
+        category: "health" as const,
+        readTime: "5 dk",
+        ageGroup: "Sağlık Sorunları",
+        isDoctorApproved: true,
+    }
+];
 
 export default async function Homepage() {
+
     // 1. Fetch Real Articles from DB
     const dbArticles = await prisma.article.findMany({
         where: { published: true },
