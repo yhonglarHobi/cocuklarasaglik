@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
     Menu,
     Move,
@@ -73,9 +74,9 @@ export default function MenuManagementPage() {
         if (result.success) {
             // Reload to get real IDs back
             await loadItems();
-            alert("Menü başarıyla güncellendi! ✅");
+            toast.success("Menü başarıyla güncellendi! ✅");
         } else {
-            alert("Hata: " + result.error);
+            toast.error("Hata: " + result.error);
         }
 
         setIsSaving(false);
