@@ -7,21 +7,14 @@ import { revalidatePath } from "next/cache";
 
 export async function generateArticlesAction(targetCategory: string, count: number) {
     try {
-        // 1. Veritabanından Ayarları Çek
         const settings = await getSystemSettings();
 
-        if (!settings?.apiKey) {
-            return { success: false, error: "API Anahtarı bulunamadı! Lütfen Ayarlar sayfasından ekleyin." };
-        }
-        if (!settings?.systemPrompt) {
-            return { success: false, error: "Master Prompt bulunamadı! Lütfen Ayarlar sayfasından ekleyin." };
-        }
+        if (!settings?.apiKey) return { success: false, error: "API Anahtarı bulunamadı! [Ayarlar] sayfasından ekleyin." };
+        if (!settings?.systemPrompt) return { success: false, error: "Master Prompt bulunamadı! [Ayarlar] sayfasından ekleyin." };
 
-        // 2. Gemini Başlat
         const genAI = new GoogleGenerativeAI(settings.apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Standart model
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-        // 3. Dinamik Prompt Hazırla
         const dynamicPrompt = `
         ${settings.systemPrompt}
 
@@ -38,91 +31,58 @@ export async function generateArticlesAction(targetCategory: string, count: numb
                 "slug": "url-dostu-kisa-baslik",
                 "excerpt": "Meta açıklama tadında kısa özet (max 160 karakter)",
                 "content": "<p>Giriş paragrafı...</p><h2>Alt Başlık</h2><ul><li>Liste maddesi</li></ul><p>Sonuç paragrafı...</p> (Tamamen HTML formatında, zengin içerik)",
-                "category_suggestion": "Önerilen Kategori İsmi",
-                "source": "Ana referans kaynağı (örn: AAP, Nemours)"
+                "category_suggestion": "Önerilen Kategori İsmi (Türkçe)",
+                "source": "Ana referans kaynağı (örn: AAP)"
             }
         ]
         `;
 
-        // 4. Üretimi Başlat
-        console.log("Gemini'ye istek gönderiliyor...");
         const result = await model.generateContent(dynamicPrompt);
         const response = await result.response;
         const text = response.text();
-        console.log("Gemini yanıtı alındı.");
 
-        // 5. JSON Temizleme
         let cleanJson = text
             .replace(/```json/g, "")
             .replace(/```/g, "")
             .trim();
 
-        // JSON'u parse et
         let articlesData;
         try {
             articlesData = JSON.parse(cleanJson);
         } catch (e) {
-            console.error("JSON Parse Hatası. Gelen veri:", cleanJson);
-            // Bazen AI tek obje döner, onu array yapmayı deneyelim mi? Hayır, promptta array istedik.
-            // Ama yine de basit bir kurtarma deneyebiliriz.
+            console.error("JSON Parse Hatası:", cleanJson);
             if (cleanJson.startsWith("{")) {
                 cleanJson = "[" + cleanJson + "]";
-                try {
-                    articlesData = JSON.parse(cleanJson);
-                } catch (e2) {
-                    return { success: false, error: "Yapay zeka yanıtı okunamadı (JSON Format Hatası)." };
-                }
+                try { articlesData = JSON.parse(cleanJson); } catch (e2) { return { success: false, error: "AI yanıtı bozuk geldi." }; }
             } else {
-                return { success: false, error: "Yapay zeka yanıtı okunamadı." };
+                return { success: false, error: "AI yanıtı formatı hatalı." };
             }
         }
 
-        // Dizi değilse diziye çevir
         const articlesArray = Array.isArray(articlesData) ? articlesData : [articlesData];
 
-        // 6. Veritabanına Yazar Kontrolü
-        // Sistemin çalışması için en az bir User (Author) lazım.
         let author = await prisma.user.findFirst({ where: { role: "ADMIN" } });
-
-        // Eğer hiç admin yoksa, geçici bir "AI Editor" kullanıcısı oluşturalım
         if (!author) {
-            // Önce herhangi bir user var mı?
             author = await prisma.user.findFirst();
             if (!author) {
-                // Hiç kullanıcı yok, oluşturalım
-                try {
-                    author = await prisma.user.create({
-                        data: {
-                            email: "ai-editor@cocuklarasaglik.com",
-                            password: "system-generated-secure-pass",
-                            name: "AI Editör",
-                            role: "ADMIN"
-                        }
-                    });
-                } catch (err) {
-                    console.error("Kullanıcı oluşturma hatası:", err);
-                    return { success: false, error: "Sistem yazarı oluşturulamadı." };
-                }
+                // Fallback user create logic if needed, or error
+                return { success: false, error: "Sistemde kayıtlı yazar (Admin) bulunamadı." };
             }
         }
 
-        // 7. Makaleleri Kaydet
         let savedCount = 0;
+        let aiCategoryProposal = null; // AI'ın önerdiği kategori varsa buraya alacağız
+
         for (const article of articlesArray) {
-            // Başlık ve İçerik dolu mu?
             if (!article.title || !article.content) continue;
 
-            // Kategori Bulma veya Oluşturma
-            // category_suggestion veritabanında var mı?
             let categoryId = null;
             if (article.category_suggestion) {
-                // Slug yap: "Çocuk Sağlığı" -> "cocuk-sagligi"
                 const catSlug = article.category_suggestion
                     .toLowerCase()
                     .replace(/ /g, "-")
                     .replace(/[ğüşıöç]/g, (c: string) => ({ 'ğ': 'g', 'ü': 'u', 'ş': 's', 'ı': 'i', 'ö': 'o', 'ç': 'c' }[c] || c));
 
-                // Var mı diye bak
                 const existingCat = await prisma.category.findFirst({
                     where: {
                         OR: [
@@ -135,15 +95,16 @@ export async function generateArticlesAction(targetCategory: string, count: numb
                 if (existingCat) {
                     categoryId = existingCat.id;
                 } else {
-                    // Yoksa oluştur (Opsiyonel: İstemiyorsan null bırak)
-                    // Şimdilik "Genel" kategorisi yoksa null kalsın veya oluştursun.
-                    // Kullanıcı "Kategoriyi onayla" dediğinde wizard sayfasında kategori manuel ekleniyor.
-                    // Burada otomatik eklemek riskli olabilir category kirliliği yaratır.
-                    // O yüzden: Kategori varsa bağla, yoksa bağlama (null).
+                    // Kategori bulunamadı, bunu frontend'e "AI Önerisi" olarak dönebiliriz
+                    aiCategoryProposal = {
+                        originalName: article.category_suggestion, // Örn: Adolescent Mental Wellness
+                        suggestedName: article.category_suggestion, // Örn: Ergen Ruh Sağlığı (Prompt tr istediği için tr gelir)
+                        reason: "Bu kategori veritabanında henüz yok."
+                    };
+                    // Şimdilik null bırakıyoruz, kullanıcı elle ekleyecek
                 }
             }
 
-            // Slug unique olmalı
             const uniqueSlug = (article.slug || "yazi") + "-" + Date.now() + Math.floor(Math.random() * 1000);
 
             await prisma.article.create({
@@ -151,23 +112,22 @@ export async function generateArticlesAction(targetCategory: string, count: numb
                     title: article.title,
                     slug: uniqueSlug,
                     excerpt: article.excerpt || "",
-                    content: article.content, // HTML
+                    content: article.content, // HTML format
                     published: false,
                     viewCount: 0,
                     authorId: author.id,
                     categoryId: categoryId,
-                    // source alanı şemada yok, içeriğe ekleyebiliriz veya şemaya eklemeliyiz. Şimdilik içeriğin sonuna ekleyelim.
                 }
             });
             savedCount++;
         }
 
         revalidatePath("/admin/wizard");
-        return { success: true, count: savedCount };
+        return { success: true, count: savedCount, aiProposal: aiCategoryProposal };
 
     } catch (error: any) {
-        console.error("Generate Action Hatası:", error);
-        return { success: false, error: error.message || "İşlem başarısız." };
+        console.error("AI Error:", error);
+        return { success: false, error: error.message || "Bilinmeyen hata." };
     }
 }
 
@@ -180,7 +140,6 @@ export async function getDraftArticlesAction() {
         });
         return drafts;
     } catch (error) {
-        console.error("Taslaklar çekilemedi:", error);
         return [];
     }
 }
@@ -192,6 +151,7 @@ export async function publishArticleAction(id: string) {
             data: { published: true }
         });
         revalidatePath("/admin/wizard");
+        revalidatePath("/"); // Ana sayfayı da güncelle
         return { success: true };
     } catch (error) {
         return { success: false };
@@ -200,12 +160,39 @@ export async function publishArticleAction(id: string) {
 
 export async function deleteArticleAction(id: string) {
     try {
-        await prisma.article.delete({
-            where: { id }
-        });
+        await prisma.article.delete({ where: { id } });
         revalidatePath("/admin/wizard");
         return { success: true };
     } catch (error) {
         return { success: false };
+    }
+}
+
+export async function createCategoryAction(name: string) {
+    try {
+        const slug = name.toLowerCase()
+            .replace(/ /g, "-")
+            .replace(/[ğüşıöç]/g, (c: string) => ({ 'ğ': 'g', 'ü': 'u', 'ş': 's', 'ı': 'i', 'ö': 'o', 'ç': 'c' }[c] || c));
+
+        // Check exist
+        const exist = await prisma.category.findUnique({ where: { slug } });
+        if (exist) return { success: false, error: "Bu kategori zaten var." };
+
+        await prisma.category.create({
+            data: { name, slug }
+        });
+
+        revalidatePath("/admin/wizard");
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: "Kategori oluşturulamadı." };
+    }
+}
+
+export async function getCategoriesAction() {
+    try {
+        return await prisma.category.findMany({ orderBy: { name: 'asc' } });
+    } catch (err) {
+        return [];
     }
 }

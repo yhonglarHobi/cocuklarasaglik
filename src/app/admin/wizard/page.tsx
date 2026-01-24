@@ -17,59 +17,72 @@ import {
     Settings,
     X,
     Eye,
-    Trash2
+    Trash2,
+    AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { generateArticlesAction, getDraftArticlesAction, publishArticleAction, deleteArticleAction } from "./actions";
+import {
+    generateArticlesAction,
+    getDraftArticlesAction,
+    publishArticleAction,
+    deleteArticleAction,
+    getCategoriesAction,
+    createCategoryAction
+} from "./actions";
 
 export default function AIWizardPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationStep, setGenerationStep] = useState("");
     const [selectedTargetCategory, setSelectedTargetCategory] = useState("all");
-    const [targetCount, setTargetCount] = useState(3); // Default 3
+    const [targetCount, setTargetCount] = useState(1); // Default 1 (Daha güvenli)
 
-    // State for Categories and Drafts
-    // Not: Kategorileri de veritabanından çekmek en doğrusu, şimdilik statik ama DB ile eşleşmeli
-    const [categories, setCategories] = useState([
-        { id: "nutrition", name: "Beslenme", slug: "/beslenme" },
-        { id: "health", name: "Sağlık Sorunları", slug: "/saglik-sorunlari" },
-        { id: "development", name: "Yaş ve Gelişim", slug: "/yas-ve-gelisim" },
-        { id: "psychology", name: "Çocuk Psikolojisi", slug: "/psikoloji" }
-    ]);
+    // State for Categories
+    const [categories, setCategories] = useState<any[]>([]);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState("");
 
+    // State for Drafts
     const [selectedDraft, setSelectedDraft] = useState<any>(null);
     const [drafts, setDrafts] = useState<any[]>([]);
     const [isLoadingDrafts, setIsLoadingDrafts] = useState(true);
 
-    // 1. Sayfa Yüklendiğinde Taslakları Çek
-    async function loadDrafts() {
+    // AI Proposal State
+    const [aiProposal, setAiProposal] = useState<{ originalName: string, suggestedName: string, reason: string } | null>(null);
+
+    // 1. Verileri Çek (Taslaklar + Kategoriler)
+    async function refreshData() {
         setIsLoadingDrafts(true);
-        const data = await getDraftArticlesAction();
-        // Basit bir mapleme: DB'den gelen veriyi UI formatına uydur
-        const formattedDrafts = data.map(d => ({
+
+        // Taslakları Çek
+        const dData = await getDraftArticlesAction();
+        const formattedDrafts = dData.map(d => ({
             id: d.id,
             title: d.title,
-            source: "AI / Gemini", // Kaynak bilgisini içerikten veya DB'den alabiliriz
+            source: "AI / Gemini",
             status: d.published ? "Yayında" : "Onay Bekliyor",
             date: new Date(d.createdAt).toLocaleDateString("tr-TR", { hour: '2-digit', minute: '2-digit' }),
             category: d.category?.name || "Genel",
             content: d.content
         }));
         setDrafts(formattedDrafts);
+
+        // Kategorileri Çek
+        const cData = await getCategoriesAction();
+        setCategories(cData);
+
         setIsLoadingDrafts(false);
     }
 
     useEffect(() => {
-        loadDrafts();
+        refreshData();
     }, []);
 
     // 2. Gerçek Üretimi Başlat
     const startManualGeneration = async () => {
         setIsGenerating(true);
         setGenerationStep(`Gemini AI ${targetCount} adet makale üretiyor...`);
+        setAiProposal(null); // Eski öneriyi temizle
 
         try {
             const res = await generateArticlesAction(selectedTargetCategory, targetCount);
@@ -77,8 +90,14 @@ export default function AIWizardPage() {
             if (res.success) {
                 setGenerationStep(`Başarılı! ${res.count} makale veritabanına eklendi.`);
                 toast.success(`${res.count} makale üretimi tamamlandı! 🎉`);
-                // Listeyi güncelle
-                await loadDrafts();
+
+                // AI Kategori Önerisi Var mı?
+                if (res.aiProposal) {
+                    setAiProposal(res.aiProposal);
+                    toast.info("AI yeni bir kategori önerdi!");
+                }
+
+                await refreshData();
             } else {
                 toast.error(`Hata: ${res.error}`);
             }
@@ -86,16 +105,30 @@ export default function AIWizardPage() {
             toast.error("Beklenmedik bir hata oluştu.");
         } finally {
             setIsGenerating(false);
+
             setGenerationStep("");
         }
     };
 
-    const handleCreateCategory = () => {
-        // Bu kısım şimdilik sadece UI, backend bağlantısı yok
-        if (newCategoryName) {
-            setCategories([...categories, { id: newCategoryName.toLowerCase(), name: newCategoryName, slug: `/${newCategoryName.toLowerCase()}` }]);
-            setNewCategoryName("");
-            setShowCategoryModal(false);
+    // 3. Kategori Oluşturma (Manuel veya AI Önerisi ile)
+    const handleCreateCategory = async (nameOverride?: string) => {
+        const nameToCreate = nameOverride || newCategoryName;
+
+        if (!nameToCreate) return;
+
+        try {
+            const res = await createCategoryAction(nameToCreate);
+            if (res.success) {
+                toast.success(`"${nameToCreate}" kategorisi oluşturuldu! ✅`);
+                setNewCategoryName("");
+                setShowCategoryModal(false);
+                setAiProposal(null); // Öneri varsa kapat
+                await refreshData(); // Listeyi yenile
+            } else {
+                toast.error(`Hata: ${res.error}`);
+            }
+        } catch (error) {
+            toast.error("Kategori oluştururken hata oluştu.");
         }
     };
 
@@ -108,11 +141,11 @@ export default function AIWizardPage() {
 
         const res = await publishArticleAction(id);
         if (res.success) {
-            alert("İçerik başarıyla yayınlandı! 🎉");
-            loadDrafts(); // Listeyi yenile
-            if (selectedDraft?.id === id) setSelectedDraft(null); // Modalı kapat
+            toast.success("İçerik başarıyla yayınlandı! 🎉");
+            await refreshData();
+            if (selectedDraft?.id === id) setSelectedDraft(null);
         } else {
-            alert("Yayınlama başarısız oldu.");
+            toast.error("Yayınlama başarısız oldu.");
         }
     };
 
@@ -121,7 +154,8 @@ export default function AIWizardPage() {
 
         const res = await deleteArticleAction(id);
         if (res.success) {
-            loadDrafts();
+            toast.success("Taslak silindi.");
+            await refreshData();
             if (selectedDraft?.id === id) setSelectedDraft(null);
         }
     }
@@ -220,6 +254,36 @@ export default function AIWizardPage() {
                             </button>
                         </div>
 
+                        {/* AI Category Proposal Alert */}
+                        {aiProposal && (
+                            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded shadow-sm flex items-start gap-4 animate-in fade-in slide-in-from-top-2">
+                                <AlertTriangle className="w-6 h-6 text-yellow-600 shrink-0" />
+                                <div className="flex-1">
+                                    <h3 className="font-bold text-yellow-800">Yapay Zeka Yeni Bir Kategori Önerdi!</h3>
+                                    <p className="text-sm text-yellow-700 mt-1 mb-3">
+                                        AI, <strong>"{aiProposal.originalName}"</strong> konulu bir içerik üretti ancak mevcut kategorilere uymadığını düşünüyor.
+                                        Önerisi: <strong>{aiProposal.suggestedName}</strong>.
+                                        <br />
+                                        <span className="text-xs italic opacity-80">Sebep: {aiProposal.reason}</span>
+                                    </p>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => handleCreateCategory(aiProposal.suggestedName)}
+                                            className="bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded text-xs font-bold border border-yellow-200 hover:bg-yellow-200"
+                                        >
+                                            Kategoriyi Onayla ve Ekle
+                                        </button>
+                                        <button
+                                            onClick={() => setAiProposal(null)}
+                                            className="bg-white text-gray-600 px-3 py-1.5 rounded text-xs font-bold border border-gray-200 hover:bg-gray-50"
+                                        >
+                                            Yoksay (Genel Kategoriye Ata)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Drafts Queue */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
@@ -311,7 +375,7 @@ export default function AIWizardPage() {
                                             onChange={(e) => setNewCategoryName(e.target.value)}
                                         />
                                         <button
-                                            onClick={handleCreateCategory}
+                                            onClick={() => handleCreateCategory()}
                                             className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
                                         >
                                             <CheckCircle className="w-4 h-4" />
