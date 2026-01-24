@@ -60,8 +60,6 @@ export async function reviseArticleAction(articleId: string, rating: number, not
             title: revisedData.title,
             excerpt: revisedData.excerpt,
             content: revisedData.content,
-            // We can store the 'rating' and feedback if we had a feedback table, 
-            // but for now we just applying the changes.
         };
 
         // Handle Image Update if prompt exists
@@ -73,6 +71,15 @@ export async function reviseArticleAction(articleId: string, rating: number, not
             const dynamicImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1200&height=630&nologo=true&seed=${Date.now()}`; // Use Date.now for fresh seed
             updateData.imageUrl = dynamicImageUrl;
         }
+
+        // --- SAVE FEEDBACK TO DB FOR TRAINING ---
+        await prisma.articleFeedback.create({
+            data: {
+                articleId: articleId,
+                rating: rating,
+                notes: notes,
+            }
+        });
 
         await prisma.article.update({
             where: { id: articleId },
