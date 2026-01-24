@@ -219,17 +219,13 @@ export async function generateArticlesAction(targetCategory: string, count: numb
 
             const uniqueSlug = (article.slug || "yazi") + "-" + Date.now() + Math.floor(Math.random() * 1000);
 
-            // Image Generation Logic (Real AI Generation via Pollinations)
-            // User requested realistic images relevant to the topic, not random.
-            // Since we don't have a paid DALL-E key, we use Pollinations.ai which is free and URL-based.
-
+            // Image Generation Logic (Google Imagen API Placeholder)
+            // Pollinations AI removed per user request.
+            // TODO: Implement Google Imagen API integration here.
             const basePrompt = article.image_prompt || `${article.title} realistic photography, medical style`;
-            const enhancedPrompt = `${basePrompt}, realistic, 8k, highly detailed, professional photography, soft lighting, pediatric context`.substring(0, 300); // Limit length
 
-            // Construct URL - Pollinations generates image on the fly
-            const dynamicImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=1200&height=630&nologo=true&seed=${uniqueSlug.substring(uniqueSlug.length - 5)}`;
-
-            const finalImage = dynamicImageUrl;
+            // For now, no image or placeholder.
+            const finalImage = null; // System will show "Görsel Yok" placeholder.
 
             await prisma.article.create({
                 data: {
