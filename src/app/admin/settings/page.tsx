@@ -4,23 +4,36 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Key, Save, AlertCircle, Database } from "lucide-react";
 
+import { getSystemSettings, updateSystemSettings } from "./actions";
+
 export default function SettingsPage() {
     const [apiKey, setApiKey] = useState("");
-    const [systemPrompt, setSystemPrompt] = useState(`OTONOM İÇERİK AJANI MASTER PROMPT v3.0 (TAM ENTEGRE)
-SİSTEM ROLÜ VE KAYNAK YÖNETİMİ: Sen, aşağıdaki dört ana kaynağı sentezleyerek içerik üreten bir otonom sağlık ajanıısın:
-- https://www.healthychildren.org/ (AAP - Klinik Rehberler)
-- https://kidshealth.org/ (Nemours - Ebeveyn Dili)
-- https://www.kidshealth.org.nz/ (Toplum Sağlığı Bakışı)
-- https://www.aboutkidshealth.ca/ (SickKids - Teknik Derinlik)
-
-ADIM 1: NAVİGASYON VE SEÇİM PROTOKOLÜ...`);
+    const [systemPrompt, setSystemPrompt] = useState("");
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const savedKey = localStorage.getItem("GEMINI_API_KEY");
-        const savedPrompt = localStorage.getItem("SYSTEM_PROMPT");
-        if (savedKey) setApiKey(savedKey);
-        if (savedPrompt) setSystemPrompt(savedPrompt);
+        // Sayfa açılınca veritabanından ayarları çek
+        async function loadSettings() {
+            const settings = await getSystemSettings();
+            if (settings) {
+                setApiKey(settings.apiKey || "");
+                setSystemPrompt(settings.systemPrompt || "");
+            }
+            setLoading(false);
+        }
+        loadSettings();
     }, []);
+
+    const handleSave = async () => {
+        const result = await updateSystemSettings(apiKey, systemPrompt);
+        if (result.success) {
+            alert("Ayarlar başarıyla veritabanına kaydedildi! ✅");
+        } else {
+            alert("Hata: Ayarlar kaydedilemedi. ❌");
+        }
+    };
+
+    if (loading) return <div className="p-8">Ayarlar yükleniyor...</div>;
 
     return (
         <div className="min-h-screen bg-[#f8f9fa] font-sans p-8">
@@ -61,15 +74,11 @@ ADIM 1: NAVİGASYON VE SEÇİM PROTOKOLÜ...`);
 
                     <div className="mt-6 flex justify-end">
                         <button
-                            onClick={() => {
-                                localStorage.setItem("GEMINI_API_KEY", apiKey);
-                                localStorage.setItem("SYSTEM_PROMPT", systemPrompt);
-                                alert("Ayarlar başarıyla tarayıcı hafızasına kaydedildi! ✅\n(Not: Bu ayarlar sadece bu cihazda ve tarayıcıda geçerlidir.)");
-                            }}
+                            onClick={handleSave}
                             className="bg-hc-blue text-white px-6 py-2 rounded font-bold text-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
                         >
                             <Save className="w-4 h-4" />
-                            Ayarları Kaydet
+                            Ayarları Veritabanına Kaydet
                         </button>
                     </div>
                 </div>
