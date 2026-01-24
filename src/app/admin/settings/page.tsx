@@ -5,10 +5,11 @@ import Link from "next/link";
 import { Key, Save, AlertCircle, Database } from "lucide-react";
 
 import { getSystemSettings, updateSystemSettings } from "./actions";
+import { DEFAULT_MASTER_PROMPT } from "./constants";
 
 export default function SettingsPage() {
     const [apiKey, setApiKey] = useState("");
-    const [systemPrompt, setSystemPrompt] = useState("");
+    const [systemPrompt, setSystemPrompt] = useState(DEFAULT_MASTER_PROMPT);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -17,7 +18,8 @@ export default function SettingsPage() {
             const settings = await getSystemSettings();
             if (settings) {
                 setApiKey(settings.apiKey || "");
-                setSystemPrompt(settings.systemPrompt || "");
+                // Eğer veritabanında prompt varsa onu kullan, yoksa varsayılanı kullan
+                setSystemPrompt(settings.systemPrompt || DEFAULT_MASTER_PROMPT);
             }
             setLoading(false);
         }
