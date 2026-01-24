@@ -36,6 +36,6 @@ export async function updateMenuItems(items: { name: string; href: string; order
         return { success: true };
     } catch (error) {
         console.error("Menü kaydedilemedi:", error);
-        return { success: false, error: "Veritabanı hatası" };
+        return { success: false, error: error instanceof Error ? error.message : "Bilinmeyen hata" };
     }
 }
