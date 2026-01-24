@@ -17,7 +17,9 @@ import {
     Menu,
     Users,
     Mail,
-    Database
+    Database,
+    X,
+    Eye
 } from "lucide-react";
 import Link from "next/link";
 
@@ -37,9 +39,27 @@ export default function AIWizardPage() {
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState("");
 
+    const [selectedDraft, setSelectedDraft] = useState<any>(null);
+
     const [drafts, setDrafts] = useState([
-        { id: 101, title: "Çocuklarda Mevsimsel Alerjiler: AAP Rehberi", source: "AAP", status: "Onay Bekliyor", date: "Bugün, 12:05", category: "Sağlık Sorunları" },
-        { id: 102, title: "Ek Gıdaya Geçişte 5 Altın Kural", source: "Nemours", status: "Onay Bekliyor", date: "Bugün, 12:05", category: "Beslenme" },
+        {
+            id: 101,
+            title: "Çocuklarda Mevsimsel Alerjiler: AAP Rehberi",
+            source: "AAP",
+            status: "Onay Bekliyor",
+            date: "Bugün, 12:05",
+            category: "Sağlık Sorunları",
+            content: "Bu makalede Amerikan Pediatri Akademisi'nin (AAP) mevsimsel alerjiler konusundaki son rehberini derledik. Polen takvimi, belirtilerin yönetimi ve ilaç kullanımı hakkında ebeveynlere yönelik pratik bilgiler içerir. Özellikle bahar aylarında artan semptomlar için alınabilecek önlemler detaylandırılmıştır."
+        },
+        {
+            id: 102,
+            title: "Ek Gıdaya Geçişte 5 Altın Kural",
+            source: "Nemours",
+            status: "Onay Bekliyor",
+            date: "Bugün, 12:05",
+            category: "Beslenme",
+            content: "Nemours KidsHealth verilerine dayanarak hazırlanan bu içerik, 6. aydan itibaren ek gıdaya geçiş sürecini ele alıyor. 3 gün kuralı, alerjen besinlerin tanıtımı ve püre kıvamları hakkında bilimsel öneriler sunuyor. Ebeveynlerin en sık yaptığı hatalar ve çözümleri madde madde sıralanmıştır."
+        },
     ]);
 
     // -- Simulated AI Category Proposal --
@@ -55,8 +75,24 @@ export default function AIWizardPage() {
         setTimeout(() => {
             setIsGenerating(false);
             const newDrafts = [
-                { id: 201, title: "Hedefli İçerik: Ergenlerde Ekran Bağımlılığı", source: "AAP", status: "Onay Bekliyor", date: "Az önce", category: selectedTargetCategory === 'all' ? "Çocuk Psikolojisi" : (categories.find(c => c.id === selectedTargetCategory)?.name || "Genel") },
-                { id: 202, title: "Hedefli İçerik: Okul Öncesi Beslenme", source: "Nemours", status: "Onay Bekliyor", date: "Az önce", category: "Beslenme" },
+                {
+                    id: 201,
+                    title: "Hedefli İçerik: Ergenlerde Ekran Bağımlılığı",
+                    source: "AAP",
+                    status: "Onay Bekliyor",
+                    date: "Az önce",
+                    category: selectedTargetCategory === 'all' ? "Çocuk Psikolojisi" : (categories.find(c => c.id === selectedTargetCategory)?.name || "Genel"),
+                    content: "Ergenlerin ekran başında geçirdiği sürenin ruh sağlığına etkileri ve ebeveynlerin uygulayabileceği dijital detoks yöntemleri."
+                },
+                {
+                    id: 202,
+                    title: "Hedefli İçerik: Okul Öncesi Beslenme",
+                    source: "Nemours",
+                    status: "Onay Bekliyor",
+                    date: "Az önce",
+                    category: "Beslenme",
+                    content: "Okul öncesi dönemdeki çocukların günlük kalori ihtiyaçları ve sağlıklı beslenme çantası örnekleri."
+                },
             ];
             setDrafts([...newDrafts, ...drafts]);
 
@@ -78,6 +114,16 @@ export default function AIWizardPage() {
             setNewCategoryName("");
             setShowCategoryModal(false);
         }
+    };
+
+    const handleReview = (draft: any) => {
+        setSelectedDraft(draft);
+    };
+
+    const handlePublish = (id: number) => {
+        // In a real app, this would make an API call to publish the article
+        setDrafts(drafts.filter(d => d.id !== id));
+        alert("İçerik başarıyla yayınlandı! 🎉\n(Canlı sitede Makaleler bölümüne eklendi)");
     };
 
     return (
@@ -221,8 +267,20 @@ export default function AIWizardPage() {
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
-                                            <button className="px-3 py-1 text-xs font-bold border border-gray-300 rounded text-gray-600 hover:bg-gray-50">İncele</button>
-                                            <button className="px-3 py-1 text-xs font-bold bg-green-500 text-white rounded hover:bg-green-600">Yayınla</button>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleReview(draft)}
+                                                    className="px-3 py-1 text-xs font-bold border border-gray-300 rounded text-gray-600 hover:bg-gray-50 flex items-center gap-1"
+                                                >
+                                                    <Eye className="w-3 h-3" /> İncele
+                                                </button>
+                                                <button
+                                                    onClick={() => handlePublish(draft.id)}
+                                                    className="px-3 py-1 text-xs font-bold bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-1"
+                                                >
+                                                    <CheckCircle className="w-3 h-3" /> Yayınla
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -281,6 +339,67 @@ export default function AIWizardPage() {
 
                 </div>
             </div>
+
+            {/* Review Modal */}
+            {selectedDraft && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+                        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <div>
+                                <h3 className="font-bold text-gray-800 text-lg">{selectedDraft.title}</h3>
+                                <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
+                                    <span className="bg-hc-blue/10 text-hc-blue px-2 py-0.5 rounded">{selectedDraft.category}</span>
+                                    <span>•</span>
+                                    Kayna: {selectedDraft.source}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedDraft(null)}
+                                className="p-2 hover:bg-gray-200 rounded-full text-gray-500 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto">
+                            <div className="prose prose-sm max-w-none">
+                                <h4 className="font-bold text-gray-700 mb-2">Özet / Taslak İçerik</h4>
+                                <p className="text-gray-600 leading-relaxed">
+                                    {selectedDraft.content}
+                                </p>
+
+                                <div className="mt-6 bg-yellow-50 p-4 rounded border border-yellow-100">
+                                    <h5 className="font-bold text-yellow-800 text-xs mb-2 flex items-center gap-1">
+                                        <Zap className="w-3 h-3" /> AI Analizi
+                                    </h5>
+                                    <p className="text-xs text-yellow-700">
+                                        Bu içerik {selectedDraft.source} veritabanından çekilmiş ve {selectedDraft.category} kategorisine uygun olarak sentezlenmiştir. Doğruluk oranı %98.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+                            <button
+                                onClick={() => setSelectedDraft(null)}
+                                className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded transition-colors"
+                            >
+                                Kapat
+                            </button>
+                            <button
+                                onClick={() => {
+                                    handlePublish(selectedDraft.id);
+                                    setSelectedDraft(null);
+                                }}
+                                className="px-4 py-2 text-sm font-bold bg-green-600 text-white hover:bg-green-700 rounded shadow-sm hover:shadow transition-all flex items-center gap-2"
+                            >
+                                <CheckCircle className="w-4 h-4" />
+                                Onayla ve Yayınla
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
