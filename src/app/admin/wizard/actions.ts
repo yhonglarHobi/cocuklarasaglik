@@ -13,7 +13,7 @@ export async function generateArticlesAction(targetCategory: string, count: numb
         if (!settings?.systemPrompt) return { success: false, error: "Master Prompt bulunamadı! [Ayarlar] sayfasından ekleyin." };
 
         const genAI = new GoogleGenerativeAI(settings.apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
         const dynamicPrompt = `
         ${settings.systemPrompt}
@@ -127,7 +127,7 @@ export async function generateArticlesAction(targetCategory: string, count: numb
 
     } catch (error: any) {
         console.error("AI Error:", error);
-        return { success: false, error: `[Model: gemini-pro] ${error.message || "Bilinmeyen hata."}` };
+        return { success: false, error: `[Model: gemini-2.0-flash-exp] ${error.message || "Bilinmeyen hata."}` };
     }
 }
 
