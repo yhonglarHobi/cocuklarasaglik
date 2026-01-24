@@ -6,7 +6,7 @@ import Link from "next/link";
 import { AdPlaceholder } from "@/components/ui/AdPlaceholder";
 import { HeroWebinar } from "@/components/home/HeroWebinar";
 
-const agesStages = [
+const DEFAULT_CATEGORIES = [
     "Hamilelik",
     "Bebek",
     "Yürümeye Başlayan (Toddler)",
@@ -16,27 +16,7 @@ const agesStages = [
     "Genç Yetişkin"
 ];
 
-// Mock Data Translations (Fallback if DB is empty)
-const mockArticles = [
-    {
-        id: "1",
-        title: "Yenidoğan Sarılığı: Ne Zaman Endişelenmeli?",
-        summary: "Bebeklerde sık görülen fizyolojik sarılık ile patolojik sarılık arasındaki farklar ve tedavi yöntemleri.",
-        category: "urgent" as const, // Cast to literal type
-        readTime: "4 dk",
-        ageGroup: "Yaş ve Gelişim: Bebek",
-        isDoctorApproved: true,
-    },
-    {
-        id: "3",
-        title: "Ateşli Çocuğa Yaklaşım: Evde İlk Yardım",
-        summary: "38 derece ve üzeri ateş durumunda yapılması gerekenler ve ilaç kullanımı.",
-        category: "health" as const,
-        readTime: "5 dk",
-        ageGroup: "Sağlık Sorunları",
-        isDoctorApproved: true,
-    }
-];
+// ... (Articles mock data remains if you want, or remove if unused)
 
 export default async function Homepage() {
     // 1. Fetch Real Articles from DB
@@ -46,6 +26,20 @@ export default async function Homepage() {
         take: 10,
         include: { category: true }
     });
+
+    // 2. Fetch Categories from DB (Sync with Wizard)
+    const dbCategories = await prisma.category.findMany({
+        orderBy: { name: 'asc' }
+    });
+
+    // Use DB categories if exists, otherwise fallback
+    const displayCategories = dbCategories.length > 0 ? dbCategories : DEFAULT_CATEGORIES.map(name => ({
+        name,
+        slug: name.toLowerCase()
+            .replace(/ /g, "-")
+            .replace(/[ğüşıöç]/g, (c: string) => ({ 'ğ': 'g', 'ü': 'u', 'ş': 's', 'ı': 'i', 'ö': 'o', 'ç': 'c' }[c] || c))
+            .replace(/[()]/g, "")
+    }));
 
     // 2. Map DB articles to UI format
     const realArticles = dbArticles.map(article => ({
@@ -79,20 +73,14 @@ export default async function Homepage() {
                 {/* Column 1: Ages & Stages (Left Sidebar) */}
                 <div className="flex flex-col gap-4 lg:col-span-1">
                     <h3 className="text-lg font-bold text-hc-blue uppercase border-b-2 border-hc-green pb-1 mb-2">Yaş ve Gelişim</h3>
-                    {agesStages.map((stage, i) => {
-                        const slug = stage.toLowerCase()
-                            .replace(/ /g, "-")
-                            .replace(/[ğüşıöç]/g, (c) => ({ 'ğ': 'g', 'ü': 'u', 'ş': 's', 'ı': 'i', 'ö': 'o', 'ç': 'c' }[c] || c));
-
-                        return (
-                            <Link key={i} href={`/category/${slug}`}>
-                                <div className="flex justify-between items-center text-gray-600 hover:text-hc-orange cursor-pointer border-b border-gray-100 py-3 transition-colors group">
-                                    <span className="group-hover:translate-x-1 transition-transform">{stage}</span>
-                                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-hc-orange" />
-                                </div>
-                            </Link>
-                        );
-                    })}
+                    {displayCategories.map((cat: any, i: number) => (
+                        <Link key={i} href={`/category/${cat.slug}`}>
+                            <div className="flex justify-between items-center text-gray-600 hover:text-hc-orange cursor-pointer border-b border-gray-100 py-3 transition-colors group">
+                                <span className="group-hover:translate-x-1 transition-transform">{cat.name}</span>
+                                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-hc-orange" />
+                            </div>
+                        </Link>
+                    ))}
 
                     {/* Ad Placeholder (Sidebar) */}
                     <div className="mt-8">
