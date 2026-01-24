@@ -368,134 +368,162 @@ export default function AIWizardPage() {
                 </div>
             </div>
 
-            {/* Review Modal - ENHANCED FOR REFINEMENT LOOP */}
+            {/* Review Drawer (Side Panel Architecture) - REPLACED MODAL TO FIX CACHE/UI ISSUES */}
             {selectedDraft && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[90vh] flex flex-col overflow-hidden">
-                        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <div className="fixed inset-0 z-50 flex justify-end">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity"
+                        onClick={() => setSelectedDraft(null)}
+                    ></div>
+
+                    {/* Side Drawer Panel */}
+                    <div className="relative w-full max-w-6xl h-full bg-[#FAFAFA] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+
+                        {/* Drawer Header */}
+                        <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 z-10">
                             <div>
-                                <h3 className="font-bold text-gray-800 text-lg">{selectedDraft.title}</h3>
-                                <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
-                                    <span className="bg-hc-blue/10 text-hc-blue px-2 py-0.5 rounded">{selectedDraft.category}</span>
+                                <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{selectedDraft.title}</h3>
+                                <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                    <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-medium">{selectedDraft.category}</span>
                                     <span>•</span>
-                                    Kaynak: {selectedDraft.source}
-                                </p>
+                                    <span>{new Date().toLocaleDateString('tr-TR')}</span>
+                                </div>
                             </div>
-                            <button
-                                onClick={() => setSelectedDraft(null)}
-                                className="p-2 hover:bg-gray-200 rounded-full text-gray-500 transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => handlePublish(selectedDraft.id)}
+                                    className="hidden md:flex bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold items-center gap-2 transition-colors shadow-sm"
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                    Yayınla
+                                </button>
+                                <button
+                                    onClick={() => setSelectedDraft(null)}
+                                    className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
                         </div>
 
-                        <div className="flex-1 flex overflow-hidden">
-                            {/* Left Side: Article Content */}
-                            <div className="flex-1 overflow-y-auto p-8 bg-white border-r border-gray-100">
-                                {selectedDraft.image && (
-                                    <div className="mb-6 rounded-lg overflow-hidden shadow-sm border border-gray-100">
-                                        <img src={selectedDraft.image} alt={selectedDraft.title} className="w-full h-48 object-cover" />
-                                    </div>
-                                )}
-                                <div
-                                    className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-hc-blue prose-p:text-gray-600 prose-img:rounded-lg prose-ul:list-disc prose-ul:pl-5"
-                                    dangerouslySetInnerHTML={{ __html: selectedDraft.content }}
-                                />
+                        {/* Split View Content */}
+                        <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+
+                            {/* Left: Article Preview (Scrollable) */}
+                            <div className="flex-1 overflow-y-auto p-8 lg:p-12 bg-white">
+                                <div className="max-w-3xl mx-auto">
+                                    {selectedDraft.image && (
+                                        <div className="mb-8 rounded-xl overflow-hidden shadow-sm aspect-video bg-gray-100 relative group">
+                                            <img src={selectedDraft.image} alt={selectedDraft.title} className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                                <span className="text-white font-medium text-sm">AI Tarafından Üretildi</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900 mb-6 leading-tight">
+                                        {selectedDraft.title}
+                                    </h1>
+
+                                    <div
+                                        className="prose prose-lg prose-blue max-w-none 
+                                        prose-headings:font-bold prose-headings:text-gray-900 
+                                        prose-p:text-gray-600 prose-p:leading-relaxed
+                                        prose-img:rounded-xl prose-img:shadow-md
+                                        prose-li:text-gray-600"
+                                        dangerouslySetInnerHTML={{ __html: selectedDraft.content }}
+                                    />
+                                </div>
                             </div>
 
-                            {/* Right Side: Refinement Loop Panel */}
-                            <div className="w-80 bg-gray-50 p-6 flex flex-col gap-6 shrink-0 overflow-y-auto">
-                                <div>
-                                    <h4 className="font-bold text-gray-800 flex items-center gap-2 mb-1">
-                                        <RefreshCw className="w-4 h-4 text-hc-blue" />
-                                        İyileştirme Döngüsü
-                                    </h4>
-                                    <p className="text-xs text-gray-500">
-                                        Yazıyı uzman doktor gözüyle değerlendirin ve yapay zekayı eğitin.
-                                    </p>
-                                </div>
-
-                                {/* Rating Slider */}
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-xs font-bold text-gray-700">
-                                        <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" /> Memnuniyet Puanı</span>
-                                        <span className={`px-2 py-0.5 rounded ${feedbackRating >= 80 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                            {feedbackRating} / 100
-                                        </span>
+                            {/* Right: AI Refinement Console (Fixed) */}
+                            <div className="w-full lg:w-96 bg-gray-50 border-l border-gray-200 flex flex-col h-[40vh] lg:h-auto shrink-0 shadow-[inset_4px_0_24px_-12px_rgba(0,0,0,0.1)]">
+                                <div className="p-6 flex-1 overflow-y-auto">
+                                    <div className="mb-6">
+                                        <h4 className="text-sm font-black text-gray-900 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                            <Zap className="w-4 h-4 text-hc-orange" fill="currentColor" />
+                                            Editör Asistanı
+                                        </h4>
+                                        <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-800 leading-relaxed">
+                                            Yazıyı inceleyin ve yapay zekaya geri bildirim verin. Puanınız ve notlarınızla AI bir sonraki yazıda sizi daha iyi anlayacak.
+                                        </div>
                                     </div>
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="100"
-                                        value={feedbackRating}
-                                        onChange={(e) => setFeedbackRating(Number(e.target.value))}
-                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-hc-blue"
-                                    />
-                                    <div className="flex justify-between text-[10px] text-gray-400">
-                                        <span>Yetersiz</span>
-                                        <span>Mükemmel</span>
+
+                                    {/* Control Group */}
+                                    <div className="space-y-6">
+
+                                        {/* Rating */}
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-sm font-bold text-gray-700">Kalite Puanı</label>
+                                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${feedbackRating >= 80 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                                    {feedbackRating}/100
+                                                </span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="0" max="100" step="5"
+                                                value={feedbackRating}
+                                                onChange={(e) => setFeedbackRating(Number(e.target.value))}
+                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-hc-blue"
+                                            />
+                                        </div>
+
+                                        {/* Feedback Input */}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-gray-700">Düzeltme Notları</label>
+                                            <textarea
+                                                className="w-full h-32 p-3 text-sm border border-gray-200 rounded-lg focus:border-hc-orange focus:ring-1 focus:ring-hc-orange outline-none resize-none transition-shadow bg-white"
+                                                placeholder="Örn: Görseli daha gerçekçi yap. Giriş paragrafını kısalt..."
+                                                value={feedbackNotes}
+                                                onChange={(e) => setFeedbackNotes(e.target.value)}
+                                            />
+                                            {/* Quick Actions Tags */}
+                                            <div className="flex flex-wrap gap-2">
+                                                {['Görseli Yenile 🖼️', 'Daha Samimi Ol 🥰', 'Tıbbi Kaynak Ekle 🩺', 'Daha Kısa Yaz ✂️'].map((tag) => (
+                                                    <button
+                                                        key={tag}
+                                                        onClick={() => setFeedbackNotes(prev => prev ? `${prev}, ${tag}` : tag)}
+                                                        className="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-medium text-gray-600 hover:border-hc-blue hover:text-hc-blue transition-colors"
+                                                    >
+                                                        {tag}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
 
-                                {/* Notes Input */}
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-700 flex items-center gap-1">
-                                        <MessageSquare className="w-3 h-3" />
-                                        Geri Bildirim & Notlar
-                                    </label>
-                                    <textarea
-                                        className="w-full p-3 text-sm border border-gray-200 rounded-lg bg-white outline-none focus:border-hc-orange resize-none h-32"
-                                        placeholder="Örn: Görseli yenile, daha samimi bir dil kullan..."
-                                        value={feedbackNotes}
-                                        onChange={(e) => setFeedbackNotes(e.target.value)}
-                                    />
-                                </div>
-
-                                {/* Quick Shortcuts */}
-                                <div className="flex flex-wrap gap-2">
-                                    <button
-                                        onClick={() => setFeedbackNotes(prev => prev ? prev + ", Görseli yenile" : "Görseli yenile")}
-                                        className="text-[10px] bg-white border border-gray-200 px-2 py-1 rounded hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                                    >
-                                        + Görseli Yenile
-                                    </button>
-                                    <button
-                                        onClick={() => setFeedbackNotes(prev => prev ? prev + ", Daha tıbbi detay ekle" : "Daha tıbbi detay ekle")}
-                                        className="text-[10px] bg-white border border-gray-200 px-2 py-1 rounded hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                                    >
-                                        + Tıbbi Detay
-                                    </button>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="mt-auto space-y-3">
+                                {/* Bottom Actions */}
+                                <div className="p-6 bg-white border-t border-gray-200 space-y-3">
                                     <button
                                         onClick={handleRefine}
                                         disabled={isRevising}
-                                        className="w-full bg-[#5c4a3d] text-white py-2.5 rounded-lg font-bold text-sm hover:bg-[#4a3b30] transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-wait"
+                                        className="w-full py-3 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform active:scale-95 disabled:opacity-50 disabled:cursor-wait"
                                     >
                                         {isRevising ? (
                                             <>
                                                 <Loader className="w-4 h-4 animate-spin" />
-                                                AI Düzenliyor...
+                                                AI Revize Ediyor...
                                             </>
                                         ) : (
                                             <>
-                                                <Zap className="w-4 h-4" />
+                                                <RefreshCw className="w-4 h-4" />
                                                 Yazıyı İyileştir
                                             </>
                                         )}
                                     </button>
 
-                                    <div className="border-t border-gray-200 pt-3">
-                                        <button
-                                            onClick={() => handlePublish(selectedDraft.id)}
-                                            className="w-full bg-green-600 text-white py-2.5 rounded-lg font-bold text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
-                                        >
-                                            <CheckCircle className="w-4 h-4" />
-                                            Onayla ve Yayınla
-                                        </button>
-                                    </div>
+                                    {/* Mobile Publish Button */}
+                                    <button
+                                        onClick={() => handlePublish(selectedDraft.id)}
+                                        className="w-full py-3 bg-green-100 text-green-700 rounded-lg font-bold text-sm hover:bg-green-200 transition-colors flex md:hidden items-center justify-center gap-2"
+                                    >
+                                        <CheckCircle className="w-4 h-4" />
+                                        Onayla ve Yayınla
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -503,6 +531,7 @@ export default function AIWizardPage() {
                     </div>
                 </div>
             )}
+
         </div>
     );
 }
