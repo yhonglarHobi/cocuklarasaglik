@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Key, Save, AlertCircle, Database } from "lucide-react";
 
+import { toast } from "sonner";
 import { getSystemSettings, updateSystemSettings } from "./actions";
 import { DEFAULT_MASTER_PROMPT } from "./constants";
 
@@ -29,9 +30,9 @@ export default function SettingsPage() {
     const handleSave = async () => {
         const result = await updateSystemSettings(apiKey, systemPrompt);
         if (result.success) {
-            alert("Ayarlar başarıyla veritabanına kaydedildi! ✅");
+            toast.success("Ayarlar başarıyla veritabanına kaydedildi! ✅");
         } else {
-            alert("Hata: Ayarlar kaydedilemedi. ❌");
+            toast.error("Hata: Ayarlar kaydedilemedi.");
         }
     };
 

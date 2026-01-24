@@ -14,6 +14,7 @@ import {
     LogOut,
     Home
 } from "lucide-react";
+import { Toaster } from "sonner";
 
 export default function AdminLayout({
     children,
@@ -59,8 +60,8 @@ export default function AdminLayout({
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
-                                        ? "bg-blue-50 text-hc-blue font-bold"
-                                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                    ? "bg-blue-50 text-hc-blue font-bold"
+                                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                                     }`}
                             >
                                 <item.icon className={`w-5 h-5 ${isActive ? "text-hc-blue" : "text-gray-400"}`} />
@@ -99,6 +100,7 @@ export default function AdminLayout({
             {/* Main Content Area */}
             <main className="flex-1 md:ml-64 min-h-screen">
                 {children}
+                <Toaster richColors position="top-right" />
             </main>
         </div>
     );

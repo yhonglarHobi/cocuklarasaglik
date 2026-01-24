@@ -20,6 +20,7 @@ import {
     Trash2
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { generateArticlesAction, getDraftArticlesAction, publishArticleAction, deleteArticleAction } from "./actions";
 
 export default function AIWizardPage() {
@@ -75,13 +76,14 @@ export default function AIWizardPage() {
 
             if (res.success) {
                 setGenerationStep(`Başarılı! ${res.count} makale veritabanına eklendi.`);
+                toast.success(`${res.count} makale üretimi tamamlandı! 🎉`);
                 // Listeyi güncelle
                 await loadDrafts();
             } else {
-                alert(`Hata: ${res.error}`);
+                toast.error(`Hata: ${res.error}`);
             }
         } catch (err) {
-            alert("Beklenmedik bir hata oluştu.");
+            toast.error("Beklenmedik bir hata oluştu.");
         } finally {
             setIsGenerating(false);
             setGenerationStep("");
