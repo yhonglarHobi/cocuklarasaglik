@@ -32,7 +32,7 @@ export async function reviseArticleAction(articleId: string, rating: number, not
         TALİMATLAR:
         1. Puan < 80 ise: Yazının tonunu ve yapısını kökten gözden geçir. Eksik bilgileri tamamla.
         2. Puan > 80 ise: Mevcut yapıyı koru, sadece spesifik geri bildirimleri (örn: "daha samimi ol") uygula.
-        3. Görsel Talebi: Eğer notlarda "görsel" kelimesi geçiyorsa veya görsel eksikse, JSON çıktısında "image_prompt" alanına yeni ve geliştirilmiş bir prompt ekle.
+        3. Görsel Talebi: Eğer notlarda "görsel" kelimesi geçiyorsa veya görsel eksikse, JSON çıktısında "image_prompt" alanına SADECE İNGİLİZCE anahtar kelimeler yaz (örn: "baby crawling floor motor development"). Türkçe kelime KULLANMA. Maksimum 4-5 kelime.
         4. Tıbbi Dil: Yazıyı cocuklarasaglik.com standartlarına uygun, hem güvenilir hem de ebeveynlerin anlayabileceği bir dille revize et.
         5. Kaynakça Listesi: Metin sonuna ASLA kaynakça listesi ekleme.
 
@@ -70,14 +70,40 @@ export async function reviseArticleAction(articleId: string, rating: number, not
             content: revisedData.content,
         };
 
-        // Handle Image Update if prompt exists
-        // Handle Image Update if prompt exists
-        // Handle Image Update if prompt exists
+        // --- INTELLIGENT IMAGE HANDLING ---
         if (revisedData.image_prompt) {
-            // User requested REALISTIC images. Using Stock Photo service (LoremFlickr) as placeholder for Google Imagen.
-            // This ensures photos are real, not AI cartoons.
-            const keywords = revisedData.image_prompt.split(',').slice(0, 3).join(',').replace(/ /g, ',') || "child,health";
-            const dynamicImageUrl = `https://loremflickr.com/1200/630/${encodeURIComponent(keywords)}?lock=${Date.now()}`;
+            // Helper function: Extract meaningful keywords and translate Turkish to English
+            const extractKeywords = (prompt: string): string => {
+                // Common pediatric terms: Turkish → English mapping
+                const trToEn: Record<string, string> = {
+                    'bebek': 'baby', 'çocuk': 'child', 'anne': 'mother', 'baba': 'father',
+                    'emzirme': 'breastfeeding', 'uyku': 'sleep', 'oyun': 'play',
+                    'gelişim': 'development', 'motor': 'motor', 'sağlık': 'health',
+                    'doktor': 'doctor', 'hastane': 'hospital', 'sürünme': 'crawling',
+                    'yürüme': 'walking', 'beslenme': 'nutrition', 'aşı': 'vaccination'
+                };
+
+                let processed = prompt.toLowerCase();
+
+                // Replace Turkish words with English equivalents
+                Object.entries(trToEn).forEach(([tr, en]) => {
+                    processed = processed.replace(new RegExp(`\\b${tr}\\b`, 'g'), en);
+                });
+
+                // Remove filler/marketing words
+                const stopWords = ['realistic', 'photograph', 'photography', 'image', 'photo', 'picture', 'professional', 'high', 'quality', 've', 'the', 'a', 'an', 'of'];
+                const words = processed
+                    .replace(/[.,!?;:()]/g, ' ')
+                    .split(/\s+/)
+                    .filter(w => w.length > 2 && !stopWords.includes(w));
+
+                // Return top 3-4 keywords
+                return words.slice(0, 4).join(',') || 'child,health';
+            };
+
+            const keywords = extractKeywords(revisedData.image_prompt);
+            // Unsplash Source API (still functional): Real stock photos matching keywords
+            const dynamicImageUrl = `https://source.unsplash.com/1200x630/?${keywords}&sig=${Date.now()}`;
             updateData.imageUrl = dynamicImageUrl;
         }
 
