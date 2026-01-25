@@ -3,11 +3,19 @@ import { Geist, Geist_Mono } from "next/font/google"; // Keeping fonts
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { getMenuItems } from "@/app/admin/menu/actions";
+import { getSystemSettings } from "@/app/admin/settings/actions";
 
-export const metadata: Metadata = {
-  title: "CocuklaraSaglik.com - Türkiye'nin Pediatri Portalı",
-  description: "Pediatristler tarafından doğrulanan güvenilir çocuk sağlığı bilgileri.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSystemSettings();
+
+  return {
+    title: "CocuklaraSaglik.com - Türkiye'nin Pediatri Portalı",
+    description: "Pediatristler tarafından doğrulanan güvenilir çocuk sağlığı bilgileri.",
+    verification: {
+      google: settings?.googleSearchConsole || undefined,
+    },
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -31,11 +39,11 @@ export default async function RootLayout({
 
             {/* Footer Links */}
             <div className="flex flex-wrap justify-center gap-6 mb-6 text-gray-600 font-bold tracking-tight">
-              <a href="/hakkimizda" className="hover:text-hc-orange hover:underline">Hakkımızda</a>
-              <a href="/iletisim" className="hover:text-hc-orange hover:underline">İletişim</a>
-              <a href="/gizlilik" className="hover:text-hc-orange hover:underline">Gizlilik Politikası</a>
-              <a href="/kullanim-sartlari" className="hover:text-hc-orange hover:underline">Kullanım Şartları</a>
-              <a href="/editorial" className="hover:text-hc-orange hover:underline">Editoryal İlkeler</a>
+              <a href="/hakkimizda" className="py-2 px-3 hover:text-hc-orange hover:underline inline-block">Hakkımızda</a>
+              <a href="/iletisim" className="py-2 px-3 hover:text-hc-orange hover:underline inline-block">İletişim</a>
+              <a href="/gizlilik" className="py-2 px-3 hover:text-hc-orange hover:underline inline-block">Gizlilik Politikası</a>
+              <a href="/kullanim-sartlari" className="py-2 px-3 hover:text-hc-orange hover:underline inline-block">Kullanım Şartları</a>
+              <a href="/editorial" className="py-2 px-3 hover:text-hc-orange hover:underline inline-block">Editoryal İlkeler</a>
             </div>
 
             <div className="w-24 h-px bg-gray-300 mx-auto mb-6"></div>

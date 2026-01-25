@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ShieldCheck, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,19 @@ export function ArticleCard({ article }: { article: Article }) {
                         {article.ageGroup}
                     </span>
                 </div>
+
+                {/* Image (if available) */}
+                {article.image && (
+                    <div className="relative w-full h-48 mb-3 rounded-sm overflow-hidden bg-gray-100">
+                        <Image
+                            src={article.image}
+                            alt={article.title}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        />
+                    </div>
+                )}
 
                 {/* Title */}
                 <h3 className="text-xl font-bold font-serif text-[#333333] mb-2 leading-tight group-hover:text-hc-orange transition-colors">

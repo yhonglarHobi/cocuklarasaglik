@@ -70,7 +70,7 @@ export function Navbar({ menuItems }: NavbarProps) {
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-2xl md:text-3xl text-hc-orange font-normal leading-none font-sans tracking-tight">cocuklara<span className="font-bold">saglik.com</span></span>
-                                <span className="text-[8px] md:text-[10px] text-gray-500 mt-1">Pediatristler Destekli. Ebeveynler Tarafından Güvenilen.</span>
+                                <span className="text-xs md:text-sm text-gray-500 mt-1">Pediatristler Destekli. Ebeveynler Tarafından Güvenilen.</span>
                             </div>
                         </div>
                     </Link>
@@ -113,7 +113,7 @@ export function Navbar({ menuItems }: NavbarProps) {
             <nav className="border-t border-b border-gray-200 py-3 bg-white sticky top-0 z-40 shadow-sm hidden md:block">
                 <div className="max-w-[1100px] mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-bold text-[#555555] px-4">
                     {links.map((link) => (
-                        <Link key={link.href} href={link.href} className="hover:text-hc-orange hover:underline decoration-2 underline-offset-4 transition-colors uppercase">
+                        <Link key={link.href} href={link.href} className="py-2 px-3 hover:text-hc-orange hover:underline decoration-2 underline-offset-4 transition-colors uppercase">
                             {link.name}
                         </Link>
                     ))}

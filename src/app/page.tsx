@@ -1,10 +1,10 @@
 import React from "react";
 import { prisma } from "@/lib/prisma";
 import { ArticleCard } from "@/components/blog/ArticleCard";
-import { ChevronRight, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
 import Link from "next/link";
-import { AdPlaceholder } from "@/components/ui/AdPlaceholder";
 import { HeroWebinar } from "@/components/home/HeroWebinar";
+import { CategoryAccordion } from "@/components/home/CategoryAccordion";
 
 const DEFAULT_CATEGORIES = [
     "Hamilelik",
@@ -94,23 +94,8 @@ export default async function Homepage() {
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 px-4 pb-12">
 
-                {/* Column 1: Ages & Stages (Left Sidebar) */}
-                <div className="flex flex-col gap-4 lg:col-span-1">
-                    <h3 className="text-lg font-bold text-hc-blue uppercase border-b-2 border-hc-green pb-1 mb-2">Yaş ve Gelişim</h3>
-                    {displayCategories.map((cat: any, i: number) => (
-                        <Link key={i} href={`/category/${cat.slug}`}>
-                            <div className="flex justify-between items-center text-gray-600 hover:text-hc-orange cursor-pointer border-b border-gray-100 py-3 transition-colors group">
-                                <span className="group-hover:translate-x-1 transition-transform">{cat.name}</span>
-                                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-hc-orange" />
-                            </div>
-                        </Link>
-                    ))}
-
-                    {/* Ad Placeholder (Sidebar) */}
-                    <div className="mt-8">
-                        <AdPlaceholder height="250px" label="Sponsorlu Alan" />
-                    </div>
-                </div>
+                {/* Column 1: Ages & Stages (Left Sidebar) - Accordion on Mobile */}
+                <CategoryAccordion categories={displayCategories} />
 
                 {/* Column 2: Latest Articles (Center/Right Content) */}
                 <div className="lg:col-span-3">
