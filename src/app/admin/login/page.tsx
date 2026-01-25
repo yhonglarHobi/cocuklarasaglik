@@ -3,23 +3,33 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, User, ShieldCheck } from "lucide-react";
+import { loginAdmin } from "./actions";
 
 export default function AdminLoginPage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError("");
+        setLoading(true);
 
-        // Kullanıcının belirlediği sabit şifreler
-        if (username === "Dradmin" && password === "Yasar101..") {
-            // Basit güvenlik: Cookie ayarla
-            document.cookie = "admin_session=true; path=/; max-age=86400"; // 1 gün geçerli
-            router.push("/admin/wizard");
-        } else {
-            setError("Hatalı kullanıcı adı veya şifre!");
+        try {
+            const result = await loginAdmin(username, password);
+
+            if (result.success) {
+                router.push("/admin/wizard");
+                router.refresh();
+            } else {
+                setError(result.error || "Giriş başarısız");
+            }
+        } catch (err) {
+            setError("Bir hata oluştu. Lütfen tekrar deneyin.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -68,9 +78,10 @@ export default function AdminLoginPage() {
 
                     <button
                         type="submit"
-                        className="w-full bg-hc-blue text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+                        disabled={loading}
+                        className="w-full bg-hc-blue text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Giriş Yap
+                        {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
                     </button>
                 </form>
             </div>
