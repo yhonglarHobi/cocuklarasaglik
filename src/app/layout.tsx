@@ -30,7 +30,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let menuItems = [];
+  let menuItems: any[] = [];
   let settings = null;
 
   try {
@@ -91,3 +91,4 @@ export default async function RootLayout({
     </html>
   );
 }
+// Build Timestamp: 2026-01-26 00:35
