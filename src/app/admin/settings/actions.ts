@@ -22,7 +22,6 @@ export async function getSystemSettings() {
                 googleAnalyticsId: "",
                 googleSearchConsole: "VrIiImxjvRc76ndnLpNP4LtFKQfC3Ka1D43OykKYNKg",
                 facebookPixelId: null,
-                createdAt: new Date(),
                 updatedAt: new Date()
             };
         }
@@ -39,8 +38,9 @@ export async function getSystemSettings() {
             adsenseSidebarSlotId: "9667343007",
             adsenseInArticleSlotId: "5728097993",
             adsenseEnabled: true,
+            googleAnalyticsId: "",
             googleSearchConsole: "VrIiImxjvRc76ndnLpNP4LtFKQfC3Ka1D43OykKYNKg",
-            createdAt: new Date(),
+            facebookPixelId: null,
             updatedAt: new Date()
         };
     }
