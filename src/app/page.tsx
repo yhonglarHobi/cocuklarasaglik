@@ -83,13 +83,13 @@ export default async function Homepage() {
 
     return (
         <div className="font-sans">
+            {/* Hero Banner Section (Client Component) */}
+            <HeroWebinar />
+
             {/* Hero Heading */}
             <div className="text-center py-6">
                 <h1 className="text-2xl md:text-5xl text-[#5c4a3d] font-serif tracking-tight px-4">Türkiye'nin En Kapsamlı Çocuk Sağlığı Portalı</h1>
             </div>
-
-            {/* Hero Banner Section (Client Component) */}
-            <HeroWebinar />
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 px-4 pb-12">

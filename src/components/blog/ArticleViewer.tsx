@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Volume2, Type, Printer, Facebook, Twitter, Linkedin, Mail, User, Calendar } from "lucide-react";
 import Link from "next/link";
 import { SafeHTML } from "@/components/ui/SafeHTML";
-import { AdPlaceholder } from "@/components/ui/AdPlaceholder";
+import { AdSenseUnit } from "@/components/ads/AdSense";
 
 interface ArticleViewerProps {
     article: {
@@ -17,9 +17,14 @@ interface ArticleViewerProps {
         categorySlug: string;
     };
     relatedArticles?: { title: string; link: string }[];
+    adsConfig?: {
+        enabled: boolean;
+        publisherId: string;
+        articleSlot: string;
+    };
 }
 
-export function ArticleViewer({ article, relatedArticles = [] }: ArticleViewerProps) {
+export function ArticleViewer({ article, relatedArticles = [], adsConfig }: ArticleViewerProps) {
     // -- Text Size Control --
     const [textSize, setTextSize] = useState(1); // 1: normal, 1.2: large, 1.4: x-large
     const handleTextSize = () => {
@@ -128,9 +133,17 @@ export function ArticleViewer({ article, relatedArticles = [] }: ArticleViewerPr
                         <SafeHTML html={article.content} />
 
                         {/* In-Article Ad */}
-                        <div className="my-8">
-                            <AdPlaceholder height="120px" label="İlginizi Çekebilir" />
-                        </div>
+                        {adsConfig && (
+                            <div className="my-8">
+                                <AdSenseUnit
+                                    publisherId={adsConfig.publisherId}
+                                    slotId={adsConfig.articleSlot}
+                                    format="horizontal"
+                                    responsive={true}
+                                    enabled={adsConfig.enabled}
+                                />
+                            </div>
+                        )}
                     </article>
 
                     {/* Disclaimer */}

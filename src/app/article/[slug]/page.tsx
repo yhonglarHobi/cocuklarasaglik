@@ -2,6 +2,7 @@ import React from "react";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { ArticleViewer } from "@/components/blog/ArticleViewer";
+import { getAdSenseConfig } from "@/components/ads/actions";
 
 export default async function ArticlePage({ params }: { params: { slug: string } }) {
     // Await params first to satisfy Next.js 15+ async requirement
@@ -49,5 +50,18 @@ export default async function ArticlePage({ params }: { params: { slug: string }
         link: `/article/${a.id}` // Using ID based routing for consistency with our previous setup
     }));
 
-    return <ArticleViewer article={formattedArticle} relatedArticles={relatedArticles} />;
+    // Get AdSense config
+    const adsConfig = await getAdSenseConfig();
+
+    return (
+        <ArticleViewer
+            article={formattedArticle}
+            relatedArticles={relatedArticles}
+            adsConfig={{
+                enabled: adsConfig.enabled,
+                publisherId: adsConfig.publisherId,
+                articleSlot: adsConfig.articleSlot
+            }}
+        />
+    );
 }
