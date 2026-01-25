@@ -21,6 +21,11 @@ interface SettingsUpdateData {
     googleAnalyticsId?: string;
     googleSearchConsole?: string;
     facebookPixelId?: string;
+    // AdSense Fields
+    adsensePublisherId?: string;
+    adsenseSidebarSlotId?: string;
+    adsenseInArticleSlotId?: string;
+    adsenseEnabled?: boolean;
 }
 
 export async function updateSystemSettings(data: SettingsUpdateData) {
@@ -32,7 +37,11 @@ export async function updateSystemSettings(data: SettingsUpdateData) {
                 systemPrompt: data.systemPrompt,
                 googleAnalyticsId: data.googleAnalyticsId,
                 googleSearchConsole: data.googleSearchConsole,
-                facebookPixelId: data.facebookPixelId
+                facebookPixelId: data.facebookPixelId,
+                adsensePublisherId: data.adsensePublisherId,
+                adsenseSidebarSlotId: data.adsenseSidebarSlotId,
+                adsenseInArticleSlotId: data.adsenseInArticleSlotId,
+                adsenseEnabled: data.adsenseEnabled
             },
             create: {
                 id: "default",
@@ -40,7 +49,11 @@ export async function updateSystemSettings(data: SettingsUpdateData) {
                 systemPrompt: data.systemPrompt,
                 googleAnalyticsId: data.googleAnalyticsId,
                 googleSearchConsole: data.googleSearchConsole,
-                facebookPixelId: data.facebookPixelId
+                facebookPixelId: data.facebookPixelId,
+                adsensePublisherId: data.adsensePublisherId,
+                adsenseSidebarSlotId: data.adsenseSidebarSlotId,
+                adsenseInArticleSlotId: data.adsenseInArticleSlotId,
+                adsenseEnabled: data.adsenseEnabled || false
             },
         });
         revalidatePath("/admin/settings");

@@ -87,6 +87,13 @@ model SystemSettings {
   googleAnalyticsId   String?
   googleSearchConsole String?
   facebookPixelId     String?
+  
+  // Reklam Ayarları (Google AdSense)
+  adsensePublisherId     String? // pub-xxxxxxxxxxxxxxxx
+  adsenseSidebarSlotId   String? // Sidebar reklam birimi ID
+  adsenseInArticleSlotId String? // Makale içi reklam birimi ID
+  adsenseEnabled         Boolean @default(false)
+
   updatedAt   DateTime @updatedAt
 }
 

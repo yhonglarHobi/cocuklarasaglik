@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Key, Save, AlertCircle, Database, Activity } from "lucide-react";
+import { Key, Save, AlertCircle, Database, Activity, DollarSign } from "lucide-react";
 
 import { toast } from "sonner";
 import { getSystemSettings, updateSystemSettings } from "./actions";
@@ -18,6 +18,12 @@ export default function SettingsPage() {
     const [gscCode, setGscCode] = useState("");
     const [fbPixel, setFbPixel] = useState("");
 
+    // --- AdSense States ---
+    const [adsPubId, setAdsPubId] = useState("");
+    const [adsSidebar, setAdsSidebar] = useState("");
+    const [adsInArticle, setAdsInArticle] = useState("");
+    const [adsEnabled, setAdsEnabled] = useState(false);
+
     useEffect(() => {
         // Sayfa açılınca veritabanından ayarları çek
         async function loadSettings() {
@@ -28,6 +34,12 @@ export default function SettingsPage() {
                 setGaId(settings.googleAnalyticsId || "");
                 setGscCode(settings.googleSearchConsole || "");
                 setFbPixel(settings.facebookPixelId || "");
+
+                // AdSense Load
+                setAdsPubId(settings.adsensePublisherId || "");
+                setAdsSidebar(settings.adsenseSidebarSlotId || "");
+                setAdsInArticle(settings.adsenseInArticleSlotId || "");
+                setAdsEnabled(settings.adsenseEnabled || false);
             }
             setLoading(false);
         }
@@ -40,7 +52,12 @@ export default function SettingsPage() {
             systemPrompt,
             googleAnalyticsId: gaId,
             googleSearchConsole: gscCode,
-            facebookPixelId: fbPixel
+            facebookPixelId: fbPixel,
+            // AdSense Save
+            adsensePublisherId: adsPubId,
+            adsenseSidebarSlotId: adsSidebar,
+            adsenseInArticleSlotId: adsInArticle,
+            adsenseEnabled: adsEnabled
         });
         if (result.success) {
             toast.success("Ayarlar başarıyla veritabanına kaydedildi! ✅");
@@ -49,13 +66,13 @@ export default function SettingsPage() {
         }
     };
 
-    if (loading) return <div className="p-8">Ayarlar yükleniyor...</div>;
+    if (loading) return <div className="p-8 flex items-center gap-3"><div className="w-5 h-5 border-2 border-gray-300 border-t-hc-blue rounded-full animate-spin"></div> Ayarlar yükleniyor...</div>;
 
     return (
         <div className="min-h-screen bg-[#f8f9fa] font-sans p-8">
             <div className="max-w-4xl mx-auto">
                 <h1 className="text-2xl font-bold text-gray-800 mb-2">Sistem Ayarları</h1>
-                <p className="text-sm text-gray-500 mb-8">Yapay zeka yapılandırması, SEO araçları ve veritabanı ayarları.</p>
+                <p className="text-sm text-gray-500 mb-8">Yapay zeka yapılandırması, SEO araçları, reklamlar ve veritabanı ayarları.</p>
 
                 <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm mb-8">
                     <div className="flex items-center gap-2 mb-4">
@@ -125,6 +142,74 @@ export default function SettingsPage() {
                                 onChange={(e) => setFbPixel(e.target.value)}
                                 className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:border-green-500 font-mono"
                             />
+                        </div>
+                    </div>
+                </div>
+
+                {/* --- ADVANCED ADVERTISING (ADSENSE) --- */}
+                <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm mb-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                        <DollarSign className="w-32 h-32" />
+                    </div>
+
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2">
+                            <DollarSign className="w-5 h-5 text-yellow-600" />
+                            <h2 className="font-bold text-gray-700">Google AdSense / Reklam Yönetimi</h2>
+                        </div>
+
+                        <label className="flex items-center cursor-pointer select-none">
+                            <div className="relative">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only"
+                                    checked={adsEnabled}
+                                    onChange={(e) => setAdsEnabled(e.target.checked)}
+                                />
+                                <div className={`block w-14 h-8 rounded-full transition-colors ${adsEnabled ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+                                <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${adsEnabled ? 'transform translate-x-6' : ''}`}></div>
+                            </div>
+                            <div className="ml-3 text-sm font-bold text-gray-600">
+                                {adsEnabled ? "Reklamlar AKTİF" : "Reklamlar KAPALI"}
+                            </div>
+                        </label>
+                    </div>
+
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 transition-opacity ${adsEnabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+                        <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Yayıncı Kimliği (Publisher ID)</label>
+                            <input
+                                type="text"
+                                placeholder="pub-1234567890123456"
+                                value={adsPubId}
+                                onChange={(e) => setAdsPubId(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:border-yellow-500 font-mono"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">Google AdSense panelinizde bulabileceğiniz `pub-` ile başlayan kimlik.</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Sidebar Reklam ID (Slot ID)</label>
+                            <input
+                                type="text"
+                                placeholder="1234567890"
+                                value={adsSidebar}
+                                onChange={(e) => setAdsSidebar(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:border-yellow-500 font-mono"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">Yan menüdeki kare reklam (300x250) için Slot ID.</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Yazı İçi Reklam ID (In-Article)</label>
+                            <input
+                                type="text"
+                                placeholder="0987654321"
+                                value={adsInArticle}
+                                onChange={(e) => setAdsInArticle(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:border-yellow-500 font-mono"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">Makale metninin ortasında çıkan yatay reklam ID'si.</p>
                         </div>
                     </div>
                 </div>
