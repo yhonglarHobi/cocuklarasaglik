@@ -80,7 +80,8 @@ export default async function Homepage() {
         readTime: "5 dk",
         ageGroup: article.category?.name || "Genel",
         isDoctorApproved: true,
-        image: article.imageUrl || undefined
+        image: article.imageUrl || undefined,
+        slug: article.slug || article.id // Use slug if available, fallback to ID
     }));
 
     // Use Mock if DB is empty, otherwise use Real

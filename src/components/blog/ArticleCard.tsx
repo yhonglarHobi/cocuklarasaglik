@@ -12,12 +12,16 @@ export interface Article {
     ageGroup: string;
     isDoctorApproved: boolean;
     image?: string;
+    slug?: string;
 }
 
 export function ArticleCard({ article }: { article: Article }) {
     // HealthyChildren uses a cleaner, more magazine-like card style.
+    // Use slug for SEO friendly URL, fallback to ID
+    const linkUrl = article.slug ? `/article/${article.slug}` : `/article/${article.id}`;
+
     return (
-        <Link href={`/article/${article.id}`} className="block h-full">
+        <Link href={linkUrl} className="block h-full">
             <div className="group bg-white flex flex-col h-full border-b border-gray-200 pb-4 mb-4 md:mb-0 hover:bg-gray-50 transition-colors p-2 rounded-sm cursor-pointer">
 
                 {/* Category Tag */}

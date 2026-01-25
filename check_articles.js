@@ -1,0 +1,1 @@
+﻿const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); async function check() { const articles = await prisma.article.findMany({ select: { id: true, title: true, published: true } }); console.log('Toplam Makale:', articles.length); console.log(articles); } check();
