@@ -8,10 +8,41 @@ export async function getSystemSettings() {
         const settings = await prisma.systemSettings.findUnique({
             where: { id: "default" },
         });
+
+        // HARDCODED FALLBACKS (If DB fails or is empty on Vercel)
+        if (!settings) {
+            return {
+                id: "default",
+                apiKey: process.env.GEMINI_API_KEY || "AIzaSyDanOsaPABZx-yRTR4EVrDkZZ3m8uprvH8",
+                systemPrompt: "ADIM 1: ROL VE KİMLİK...",
+                adsensePublisherId: "pub-2016504597450637",
+                adsenseSidebarSlotId: "9667343007",
+                adsenseInArticleSlotId: "5728097993",
+                adsenseEnabled: true,
+                googleAnalyticsId: "",
+                googleSearchConsole: "VrIiImxjvRc76ndnLpNP4LtFKQfC3Ka1D43OykKYNKg",
+                facebookPixelId: null,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+        }
+
         return settings;
     } catch (error) {
-        console.error("Ayarlar getirilemedi:", error);
-        return null;
+        console.error("Ayarlar getirilemedi (DB Error), Fallback kullanılıyor:", error);
+        // Fallback on Error
+        return {
+            id: "default",
+            apiKey: process.env.GEMINI_API_KEY || "AIzaSyDanOsaPABZx-yRTR4EVrDkZZ3m8uprvH8",
+            systemPrompt: "ADIM 1: ROL VE KİMLİK...",
+            adsensePublisherId: "pub-2016504597450637",
+            adsenseSidebarSlotId: "9667343007",
+            adsenseInArticleSlotId: "5728097993",
+            adsenseEnabled: true,
+            googleSearchConsole: "VrIiImxjvRc76ndnLpNP4LtFKQfC3Ka1D43OykKYNKg",
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
     }
 }
 

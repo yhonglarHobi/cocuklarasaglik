@@ -11,7 +11,7 @@ async function restoreSettings() {
 
     // 2. AdSense (Reklamlar İçin)
     // ads.txt dosyasından alınan ID
-    const ADSENSE_PUB_ID = "pub-9020300486683881";
+    const ADSENSE_PUB_ID = "pub-2016504597450637";
 
     // 3. System Prompt (AI Davranışı)
     const SYSTEM_PROMPT = `ADIM 1: ROL VE KİMLİK
@@ -44,8 +44,8 @@ ADIM 4: SEO VE FORMAT
             systemPrompt: SYSTEM_PROMPT,
             adsensePublisherId: ADSENSE_PUB_ID,
             adsenseEnabled: true, // Reklamları otomatik aktif et
-            adsenseInArticleSlotId: "1234567890", // Örnek Slot ID (Panelden değiştirilmeli)
-            adsenseSidebarSlotId: "0987654321",   // Örnek Slot ID
+            adsenseInArticleSlotId: "5728097993", // Örnek Slot ID (Panelden değiştirilmeli)
+            adsenseSidebarSlotId: "9667343007",   // Örnek Slot ID
             updatedAt: new Date(),
         };
 
