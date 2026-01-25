@@ -106,7 +106,7 @@ export function ArticleViewer({ article, relatedArticles = [], adsConfig }: Arti
                                 alt={article.title}
                                 className="w-full h-auto object-cover max-h-[500px]"
                             />
-                            <p className="text-[10px] text-gray-400 mt-2 text-right px-2 pb-2">Görsel: Gemini tarafından makale için özel üretilmiştir.</p>
+                            <p className="text-[10px] text-gray-400 mt-2 text-right px-2 pb-2">Temsili Görsel</p>
                         </div>
                     )}
 
@@ -160,7 +160,7 @@ export function ArticleViewer({ article, relatedArticles = [], adsConfig }: Arti
                     <div className="bg-white border border-gray-200 p-5 text-center">
                         <div className="w-24 h-24 mx-auto mb-3 rounded-full overflow-hidden border-4 border-[#fbfbf1]">
                             <img
-                                src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png"
+                                src="https://cdn-icons-png.flaticon.com/512/3774/3774299.png" // Medical team icon
                                 alt={article.authorName}
                                 className="w-full h-full object-cover"
                             />
@@ -169,13 +169,13 @@ export function ArticleViewer({ article, relatedArticles = [], adsConfig }: Arti
                             {article.authorName}
                         </h3>
                         <p className="text-xs text-gray-500 uppercase tracking-wide font-bold mb-3">
-                            Otonom İçerik Ajansı
+                            Medikal Yayın Kurulu
                         </p>
                         <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                            Çocuk sağlığı ve hastalıkları konusunda küresel kaynakları tarayan yapay zeka destekli editör.
+                            Çocuk sağlığı ve hastalıkları alanında güncel bilimsel literatürü takip eden uzman editör ekibi.
                         </p>
-                        <Link href="#" className="text-hc-blue text-xs font-bold uppercase hover:underline">
-                            Yazarın Profili
+                        <Link href="/hakkimizda" className="text-hc-blue text-xs font-bold uppercase hover:underline">
+                            Ekip Hakkında
                         </Link>
                     </div>
                     {/* Related Articles */}
