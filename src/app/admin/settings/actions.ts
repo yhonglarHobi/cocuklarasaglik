@@ -23,7 +23,7 @@ export async function getSystemSettings() {
                 googleSearchConsole: "VrIiImxjvRc76ndnLpNP4LtFKQfC3Ka1D43OykKYNKg",
                 facebookPixelId: null,
                 updatedAt: new Date()
-            };
+            } as any;
         }
 
         return settings;
