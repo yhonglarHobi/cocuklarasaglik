@@ -7,15 +7,22 @@ import { getSystemSettings } from "@/app/admin/settings/actions";
 import Script from "next/script";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getSystemSettings();
-
-  return {
-    title: "CocuklaraSaglik.com - Türkiye'nin Pediatri Portalı",
-    description: "Pediatristler tarafından doğrulanan güvenilir çocuk sağlığı bilgileri.",
-    verification: {
-      google: settings?.googleSearchConsole || undefined,
-    },
-  };
+  try {
+    const settings = await getSystemSettings();
+    return {
+      title: "CocuklaraSaglik.com - Türkiye'nin Pediatri Portalı",
+      description: "Pediatristler tarafından doğrulanan güvenilir çocuk sağlığı bilgileri.",
+      verification: {
+        google: settings?.googleSearchConsole || undefined,
+      },
+    };
+  } catch (error) {
+    console.error("Metadata error:", error);
+    return {
+      title: "CocuklaraSaglik.com - Türkiye'nin Pediatri Portalı",
+      description: "Pediatristler tarafından doğrulanan güvenilir çocuk sağlığı bilgileri.",
+    };
+  }
 }
 
 export default async function RootLayout({
@@ -23,8 +30,18 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const menuItems = await getMenuItems();
-  const settings = await getSystemSettings();
+  let menuItems = [];
+  let settings = null;
+
+  try {
+    [menuItems, settings] = await Promise.all([
+      getMenuItems(),
+      getSystemSettings()
+    ]);
+  } catch (error) {
+    console.error("Layout data fetching error:", error);
+  }
+
   const gaId = settings?.googleAnalyticsId;
 
   return (
@@ -51,12 +68,8 @@ export default async function RootLayout({
           {children}
         </main>
 
-        {/* Footer Replica - Translated */}
-        {/* Footer Refined */}
         <footer className="w-full bg-white border-t border-gray-200 mt-auto py-8 text-sm font-sans">
           <div className="max-w-[1100px] mx-auto px-4 text-center">
-
-            {/* Footer Links */}
             <div className="flex flex-wrap justify-center gap-6 mb-6 text-gray-600 font-bold tracking-tight">
               <a href="/hakkimizda" className="py-2 px-3 hover:text-hc-orange hover:underline inline-block">Hakkımızda</a>
               <a href="/iletisim" className="py-2 px-3 hover:text-hc-orange hover:underline inline-block">İletişim</a>
@@ -64,10 +77,7 @@ export default async function RootLayout({
               <a href="/kullanim-sartlari" className="py-2 px-3 hover:text-hc-orange hover:underline inline-block">Kullanım Şartları</a>
               <a href="/editorial" className="py-2 px-3 hover:text-hc-orange hover:underline inline-block">Editoryal İlkeler</a>
             </div>
-
             <div className="w-24 h-px bg-gray-300 mx-auto mb-6"></div>
-
-            {/* Copyright & Branding */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
               <span>© 2026 CocuklaraSaglik.com. Tüm hakları saklıdır.</span>
               <div className="flex items-center gap-2 opacity-80 filter grayscale hover:grayscale-0 transition-all">
@@ -75,11 +85,8 @@ export default async function RootLayout({
                 <span className="font-bold text-hc-blue">Pediatristler Platformu</span>
               </div>
             </div>
-
           </div>
         </footer>
-
-
       </body>
     </html>
   );

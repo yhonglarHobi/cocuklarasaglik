@@ -42,19 +42,25 @@ const mockArticles = [
 export const dynamic = "force-dynamic";
 
 export default async function Homepage() {
+    let dbArticles: any[] = [];
+    let dbCategories: any[] = [];
 
-    // 1. Fetch Real Articles from DB
-    const dbArticles = await prisma.article.findMany({
-        where: { published: true },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-        include: { category: true }
-    });
+    try {
+        // 1. Fetch Real Articles from DB
+        dbArticles = await prisma.article.findMany({
+            where: { published: true },
+            orderBy: { createdAt: "desc" },
+            take: 10,
+            include: { category: true }
+        });
 
-    // 2. Fetch Categories from DB (Sync with Wizard)
-    const dbCategories = await prisma.category.findMany({
-        orderBy: { name: 'asc' }
-    });
+        // 2. Fetch Categories from DB (Sync with Wizard)
+        dbCategories = await prisma.category.findMany({
+            orderBy: { name: 'asc' }
+        });
+    } catch (error) {
+        console.error("Homepage data fetching error:", error);
+    }
 
     // Use DB categories if exists, otherwise fallback
     const displayCategories = dbCategories.length > 0 ? dbCategories : DEFAULT_CATEGORIES.map(name => ({
@@ -69,7 +75,7 @@ export default async function Homepage() {
     const realArticles = dbArticles.map(article => ({
         id: article.id,
         title: article.title,
-        summary: article.excerpt || article.content.substring(0, 150) + "...",
+        summary: article.excerpt || (article.content ? article.content.substring(0, 150) + "..." : ""),
         category: "health" as const, // You might want dynamic mapping here
         readTime: "5 dk",
         ageGroup: article.category?.name || "Genel",
