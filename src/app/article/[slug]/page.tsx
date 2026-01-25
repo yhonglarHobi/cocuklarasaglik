@@ -85,9 +85,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
     } catch (error) {
         console.error("Article Page Error:", error);
-        // If it's a specific not found error, rethrow it
-        // Otherwise return null or custom error UI, but for now let's use notFound for safety
-        notFound();
+        // Hata varsa 404'e yönlendirme, hatayı fırlat ki Vercel loglarında görelim
+        // ve Google'a geçici sunucu hatası (500) olduğunu belirtelim (404 kalıcı silindi demektir)
+        throw error;
     }
 
     // Format for Viewer
