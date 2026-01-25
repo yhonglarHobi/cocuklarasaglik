@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { getMenuItems } from "@/app/admin/menu/actions";
 import { getSystemSettings } from "@/app/admin/settings/actions";
+import Script from "next/script";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSystemSettings();
@@ -23,10 +24,28 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const menuItems = await getMenuItems();
+  const settings = await getSystemSettings();
+  const gaId = settings?.googleAnalyticsId;
 
   return (
     <html lang="tr">
       <body className="antialiased min-h-screen flex flex-col bg-white">
+        {gaId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${gaId}');
+              `}
+            </Script>
+          </>
+        )}
         <Navbar menuItems={menuItems} />
         <main className="flex-1 w-full max-w-[1100px] mx-auto bg-white shadow-sm my-4 min-h-[500px] px-0 md:px-0">
           {children}
