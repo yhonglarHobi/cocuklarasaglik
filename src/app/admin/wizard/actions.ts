@@ -15,12 +15,25 @@ export async function uploadImageAction(formData: FormData) {
             return { success: false, error: "Dosya bulunamadı." };
         }
 
+        // Dosya tipi kontrolü
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+        if (!allowedTypes.includes(file.type)) {
+            return { success: false, error: `Geçersiz dosya tipi: ${file.type}. Sadece JPG, PNG, WebP veya GIF yükleyebilirsiniz.` };
+        }
+
+        // Dosya boyutu kontrolü (10MB)
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+            return { success: false, error: `Dosya çok büyük (${(file.size / 1024 / 1024).toFixed(2)}MB). Maksimum 10MB yükleyebilirsiniz.` };
+        }
+
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
         // Dosya ismini güvenli hale getir ve timestamp ekle
+        const fileExtension = file.name.split('.').pop() || 'jpg';
         const filename = file.name.replace(/[^a-zA-Z0-9.-]/g, "").toLowerCase();
-        const uniqueName = `upload-${Date.now()}-${filename}`;
+        const uniqueName = `upload-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
 
         // Kayıt yolu (public/uploads)
         const uploadDir = path.join(process.cwd(), "public", "uploads");
@@ -35,6 +48,7 @@ export async function uploadImageAction(formData: FormData) {
 
         // Public URL döndür
         const publicUrl = `/uploads/${uniqueName}`;
+        console.log('✅ Dosya yüklendi:', publicUrl, `(${(file.size / 1024).toFixed(2)}KB)`);
         return { success: true, url: publicUrl };
 
     } catch (error: any) {
