@@ -7,7 +7,7 @@ async function restoreSettings() {
     console.log('🔄 Ayarlar ve Analitik verileri geri yükleniyor...');
 
     // 1. Gemini API (İçerik Üretimi İçin)
-    const GEMINI_KEY = process.env.GEMINI_API_KEY || "AIzaSyCI2xKBECH8v1n9aXQWxrQLKGdZRp4dQq0";
+    const GEMINI_KEY = process.env.GEMINI_API_KEY || "AIzaSyDanOsaPABZx-yRTR4EVrDkZZ3m8uprvH8";
 
     // 2. AdSense (Reklamlar İçin)
     // ads.txt dosyasından alınan ID

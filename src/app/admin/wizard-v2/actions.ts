@@ -37,7 +37,7 @@ export async function reviseArticleAction(articleId: string, rating: number, not
     try {
         const settings = await getSystemSettings();
         // Fallback to environment variable if DB setting is missing
-        const apiKey = settings?.apiKey || process.env.GEMINI_API_KEY || "AIzaSyCI2xKBECH8v1n9aXQWxrQLKGdZRp4dQq0";
+        const apiKey = settings?.apiKey || process.env.GEMINI_API_KEY || "AIzaSyDanOsaPABZx-yRTR4EVrDkZZ3m8uprvH8";
 
         if (!apiKey) return { success: false, error: "API Anahtarı eksik. (Env veya DB)" };
 
@@ -162,7 +162,7 @@ export async function regenerateImageAction(articleId: string) {
         if (!article) return { success: false, error: "Makale bulunamadı." };
 
         const settings = await getSystemSettings();
-        const apiKey = settings?.apiKey || "AIzaSyCI2xKBECH8v1n9aXQWxrQLKGdZRp4dQq0";
+        const apiKey = settings?.apiKey || "AIzaSyDanOsaPABZx-yRTR4EVrDkZZ3m8uprvH8";
         if (!apiKey) return { success: false, error: "API Anahtarı eksik." };
 
         const genAI = new GoogleGenerativeAI(apiKey);
@@ -214,7 +214,7 @@ export async function regenerateImageAction(articleId: string) {
 export async function improveSEOAction(articleId: string, improvementType: 'meta' | 'length' | 'keyword', focusKeyword: string) {
     try {
         const settings = await getSystemSettings();
-        const apiKey = settings?.apiKey || process.env.GEMINI_API_KEY || "AIzaSyCI2xKBECH8v1n9aXQWxrQLKGdZRp4dQq0";
+        const apiKey = settings?.apiKey || process.env.GEMINI_API_KEY || "AIzaSyDanOsaPABZx-yRTR4EVrDkZZ3m8uprvH8";
         if (!apiKey) return { success: false, error: "API Anahtarı eksik." };
 
         const article = await prisma.article.findUnique({ where: { id: articleId } });
@@ -300,7 +300,7 @@ export async function generateArticlesAction(targetCategory: string, count: numb
         const safeSettings = settings || { apiKey: null, systemPrompt: null };
 
         // FORCE FALLBACK (Emergency Fix for Vercel)
-        const apiKey = safeSettings.apiKey || process.env.GEMINI_API_KEY || "AIzaSyCI2xKBECH8v1n9aXQWxrQLKGdZRp4dQq0";
+        const apiKey = safeSettings.apiKey || process.env.GEMINI_API_KEY || "AIzaSyDanOsaPABZx-yRTR4EVrDkZZ3m8uprvH8";
         const systemPrompt = safeSettings.systemPrompt || `ADIM 1: ROL VE KİMLİK
 - Sen, "CocuklaraSaglik.com" platformunun baş editörüsün.
 - Kimliğin: Deneyimli, objektif ve kanıta dayalı tıp prensiplerine bağlı bir pediatri editörü.
