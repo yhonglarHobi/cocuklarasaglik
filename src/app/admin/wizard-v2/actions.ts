@@ -45,7 +45,7 @@ export async function reviseArticleAction(articleId: string, rating: number, not
         if (!article) return { success: false, error: "Makale bulunamadı." };
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const refinementPrompt = `
         SİSTEM ROLÜ: Sen, uzman bir tıbbi editör ve içerik stratejistisin. Görevin, bir çocuk sağlığı uzmanı tarafından hazırlanan taslağı gelen geri bildirimlere göre mükemmelleştirmektir.
@@ -166,7 +166,7 @@ export async function regenerateImageAction(articleId: string) {
         if (!apiKey) return { success: false, error: "API Anahtarı eksik." };
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         // 1. Prompt Oluştur
         const promptParams = `
@@ -309,7 +309,8 @@ export async function generateArticlesAction(targetCategory: string, count: numb
         if (!apiKey) return { success: false, error: "API Anahtarı bulunamadı! [Ayarlar] sayfasından ekleyin." };
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        // Downgrade to 1.5-flash to check compatibilty
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const dynamicPrompt = `
         ${systemPrompt}
