@@ -11,7 +11,7 @@ export default function CategoryView({ slug }: { slug: string }) {
     }
 
     return (
-        <div className="font-sans text-[#333333]">
+        <div className="font-sans text-[#333333] px-4 md:px-0">
 
             {/* Breadcrumb */}
             <div className="text-[10px] text-hc-orange font-bold uppercase tracking-wide mb-6">
