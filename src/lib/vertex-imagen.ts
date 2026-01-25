@@ -41,19 +41,24 @@ export async function getVertexAccessToken(): Promise<{ success: boolean; token?
             }
         } else {
             // Fallback to file (Local development)
-            const CREDENTIALS_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS || './google-credentials.json';
+            // KESİN YOL: Proje kök dizininden tam yol oluştur
+            const path = await import('path');
+            const CREDENTIALS_PATH = path.join(process.cwd(), 'google-credentials.json');
+
+            console.log('🔍 Vertex AI: Credentials yolu kontrol ediliyor:', CREDENTIALS_PATH);
 
             // Check if credentials file exists
             if (!fs.existsSync(CREDENTIALS_PATH)) {
+                console.error('❌ Dosya bulunamadı!');
                 return {
                     success: false,
-                    error: 'Vertex AI görsel oluşturma için Google Service Account ayarlanmamış. Manuel görsel yükleyebilir veya URL girebilirsiniz.'
+                    error: `Credentials dosyası bulunamadı: ${CREDENTIALS_PATH}`
                 };
             }
 
             // Load service account credentials from file
             credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf-8'));
-            console.log('✅ Credentials loaded from file');
+            console.log('✅ Credentials loaded from file. Client Email:', credentials.client_email);
         }
 
         // Create JWT
@@ -133,7 +138,8 @@ export async function generateImageWithVertex(
         const accessToken = tokenResponse.token;
 
         // Prepare endpoint (Note: imagegeneration models currently deprecated, will fallback to Unsplash)
-        const endpoint = `https://${VERTEX_REGION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_REGION}/publishers/google/models/imagegeneration@005:predict`;
+        // Prepare endpoint (Imagen 3 - Mandatory Update)
+        const endpoint = `https://${VERTEX_REGION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_REGION}/publishers/google/models/imagen-3.0-generate-001:predict`;
 
         // Enhance prompt for pediatric content
         const enhancedPrompt = `${options.prompt}, warm lighting, family-friendly, realistic photograph, professional quality, safe for children`;
