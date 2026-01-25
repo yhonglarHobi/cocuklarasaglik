@@ -100,22 +100,24 @@ export async function importWordpressXmlAction(xmlContent: string): Promise<Impo
                     imageUrl = imgMatch[1];
                 }
 
-                // Veritabanına kaydet
+                // Veritabanına kaydet (TASLAK OLARAK)
                 await prisma.article.create({
                     data: {
                         title: title,
                         slug: slug, // URL AYNEN KORUNDU
                         content: content,
-                        excerpt: excerpt.substring(0, 300), // Prisma limiti olabilir diye kıstım
-                        published: true, // Zaten WP'de yayınlanmış
+                        excerpt: excerpt.substring(0, 300),
+                        published: false, // Kontrol edilmek üzere TASLAK yapıldı
+                        source: "WORDPRESS_IMPORT", // Kaynak belirtildi
                         authorId: author.id,
                         categoryId: categoryId,
-                        imageUrl: imageUrl, // Orijinal WP URL'i (Hotlink). İleride sunucuya çekilebilir.
-                        createdAt: pubDate, // Orijinal yayın tarihi
+                        imageUrl: imageUrl,
+                        createdAt: pubDate,
                         viewCount: 0
                     }
                 });
 
+                logs.push(`Eklendi (Taslak - WORDPRESS_IMPORT): ${title}`);
                 importedCount++;
 
             } catch (err: any) {

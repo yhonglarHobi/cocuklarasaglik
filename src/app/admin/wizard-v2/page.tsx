@@ -47,6 +47,37 @@ import { SEOScorePanel } from "@/components/admin/SEOScorePanel";
 import { analyzeSEO, SEOAnalysisResult } from "@/lib/seo-analyzer";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 
+// --- DraftItem Bileşeni ---
+function DraftItem({ draft, onDelete, onReview, onPublish, isImported = false }: any) {
+    return (
+        <div className={`p-4 hover:bg-opacity-50 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${isImported ? 'bg-orange-50/10 hover:bg-orange-50' : 'hover:bg-blue-50/20'}`}>
+            <div>
+                <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                    {draft.title}
+                    {isImported && <span className="bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wide">Import</span>}
+                </h3>
+                <div className="flex gap-2 text-xs mt-1">
+                    <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{draft.category}</span>
+                    <span className="text-gray-400">•</span>
+                    <span className="text-gray-500">{draft.date}</span>
+                </div>
+            </div>
+            {/* Buttons */}
+            <div className="flex gap-2 shrink-0">
+                <button onClick={() => onDelete(draft.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Sil">
+                    <Trash2 className="w-4 h-4" />
+                </button>
+                <button onClick={() => onReview(draft)} className="px-3 py-1 text-xs font-bold border border-gray-300 rounded text-gray-600 hover:bg-gray-50 flex items-center gap-1">
+                    <Eye className="w-3 h-3" /> İncele
+                </button>
+                <button onClick={() => onPublish(draft.id)} className="px-3 py-1 text-xs font-bold bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" /> Yayınla
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function AIWizardPage() {
     // ... (existing state)
     const [isGenerating, setIsGenerating] = useState(false);
@@ -148,7 +179,7 @@ export default function AIWizardPage() {
         const formattedDrafts = dData.map((d: any) => ({
             id: d.id,
             title: d.title,
-            source: "AI / Gemini",
+            source: d.source || "AI / Gemini",
             status: d.published ? "Yayında" : "Onay Bekliyor",
             date: new Date(d.createdAt).toLocaleDateString("tr-TR", { hour: '2-digit', minute: '2-digit' }),
             category: d.category?.name || "Genel",
@@ -378,6 +409,9 @@ export default function AIWizardPage() {
                         <Link href="/admin/menu" className="p-2 bg-white border border-gray-200 rounded hover:bg-gray-50 text-gray-600" title="Menü Yönetimi">
                             <Menu className="w-5 h-5" />
                         </Link>
+                        <Link href="/admin/import" className="p-2 bg-white border border-gray-200 rounded hover:bg-gray-50 text-gray-600" title="Veri İçe Aktar">
+                            <Database className="w-5 h-5" />
+                        </Link>
                         <Link href="/admin/settings" className="p-2 bg-white border border-gray-200 rounded hover:bg-gray-50 text-gray-600" title="Ayarlar">
                             <Settings className="w-5 h-5" />
                         </Link>
@@ -454,43 +488,52 @@ export default function AIWizardPage() {
 
                             {isLoadingDrafts ? (
                                 <div className="p-8 text-center text-gray-500 text-sm">Veriler yükleniyor...</div>
-                            ) : drafts.length === 0 ? (
-                                <div className="p-8 text-center text-gray-400 text-sm">Henüz onay bekleyen taslak yok.</div>
                             ) : (
-                                <div className="divide-y divide-gray-50 max-h-[500px] overflow-y-auto">
-                                    {drafts.map((draft: any) => (
-                                        <div key={draft.id} className="p-4 hover:bg-blue-50/20 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                            <div>
-                                                <h3 className="font-bold text-gray-800 text-sm">{draft.title}</h3>
-                                                <div className="flex gap-2 text-xs mt-1">
-                                                    <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{draft.category}</span>
-                                                    <span className="text-gray-400">•</span>
-                                                    <span className="text-gray-500">{draft.date}</span>
-                                                </div>
+                                <div className="max-h-[600px] overflow-y-auto divide-y divide-gray-100">
+
+                                    {/* --- AI Tarafından Üretilenler --- */}
+                                    {drafts.filter((d: any) => d.source !== "WORDPRESS_IMPORT").length > 0 && (
+                                        <div>
+                                            <div className="bg-gray-50 px-6 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider sticky top-0">
+                                                Yapay Zeka (AI) İçerikleri
                                             </div>
-                                            <div className="flex gap-2 shrink-0">
-                                                <button
-                                                    onClick={() => handleDelete(draft.id)}
-                                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                                    title="Sil"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleReview(draft)}
-                                                    className="px-3 py-1 text-xs font-bold border border-gray-300 rounded text-gray-600 hover:bg-gray-50 flex items-center gap-1"
-                                                >
-                                                    <Eye className="w-3 h-3" /> İncele
-                                                </button>
-                                                <button
-                                                    onClick={() => handlePublish(draft.id)}
-                                                    className="px-3 py-1 text-xs font-bold bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-1"
-                                                >
-                                                    <CheckCircle className="w-3 h-3" /> Yayınla
-                                                </button>
-                                            </div>
+                                            {drafts.filter((d: any) => d.source !== "WORDPRESS_IMPORT").map((draft: any) => (
+                                                <DraftItem
+                                                    key={draft.id}
+                                                    draft={draft}
+                                                    onDelete={handleDelete}
+                                                    onReview={handleReview}
+                                                    onPublish={handlePublish}
+                                                />
+                                            ))}
                                         </div>
-                                    ))}
+                                    )}
+
+                                    {/* --- WordPress'ten Gelenler --- */}
+                                    {drafts.filter((d: any) => d.source === "WORDPRESS_IMPORT").length > 0 && (
+                                        <div>
+                                            <div className="bg-orange-50 px-6 py-2 text-xs font-bold text-orange-600 uppercase tracking-wider sticky top-0 border-t border-orange-100 flex justify-between items-center">
+                                                <span>Dışa Aktarılanlar (WordPress)</span>
+                                                <span className="bg-white px-2 py-0.5 rounded-full text-[10px] border border-orange-200">
+                                                    {drafts.filter((d: any) => d.source === "WORDPRESS_IMPORT").length}
+                                                </span>
+                                            </div>
+                                            {drafts.filter((d: any) => d.source === "WORDPRESS_IMPORT").map((draft: any) => (
+                                                <DraftItem
+                                                    key={draft.id}
+                                                    draft={draft}
+                                                    onDelete={handleDelete}
+                                                    onReview={handleReview}
+                                                    onPublish={handlePublish}
+                                                    isImported
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {drafts.length === 0 && (
+                                        <div className="p-8 text-center text-gray-400 text-sm">Henüz onay bekleyen taslak yok.</div>
+                                    )}
                                 </div>
                             )}
                         </div>

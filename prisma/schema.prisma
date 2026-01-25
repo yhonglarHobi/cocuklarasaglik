@@ -38,6 +38,7 @@ model Article {
   imageUrl    String?  // Kapak görseli
   published   Boolean  @default(false)
   viewCount   Int      @default(0)
+  source      String   @default("SYSTEM") // SYSTEM, WORDPRESS_IMPORT, RSS vb.
   
   // SEO Alanları
   focusKeyword String?
