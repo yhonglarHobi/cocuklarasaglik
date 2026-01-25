@@ -25,7 +25,9 @@ export function HeroWebinar() {
                 </div>
 
                 {/* Abstract Visual (Right side on Desktop, Top on Mobile) */}
-                <div className="w-full md:absolute md:right-0 md:top-0 h-48 md:h-full md:w-3/5 bg-[url('https://images.unsplash.com/photo-1632053009664-67252cb72412?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center order-1 md:order-2 opacity-100 md:opacity-40 md:mix-blend-overlay md:group-hover:opacity-50 transition-opacity">
+                <div className="w-full md:absolute md:right-0 md:top-0 h-56 md:h-full md:w-3/5 bg-gradient-to-r from-[#fbfbf1] to-transparent bg-[url('https://images.unsplash.com/photo-1632053009928-12b2e0436979?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center order-1 md:order-2 opacity-100 md:opacity-40 md:mix-blend-overlay md:group-hover:opacity-50 transition-opacity relative">
+                    {/* Mobile Overlay Gradient to blend with text below */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#fbfbf1] md:hidden"></div>
                 </div>
             </div>
 
