@@ -26,18 +26,37 @@ export interface ImageGenerationResult {
  */
 export async function getVertexAccessToken(): Promise<{ success: boolean; token?: string; error?: string }> {
     try {
-        const CREDENTIALS_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS || './google-credentials.json';
+        let credentials: any;
 
-        // Check if credentials file exists
-        if (!fs.existsSync(CREDENTIALS_PATH)) {
-            return {
-                success: false,
-                error: 'Vertex AI görsel oluşturma için Google Service Account ayarlanmamış. Manuel görsel yükleyebilir veya URL girebilirsiniz.'
-            };
+        // Try to load from environment variable first (Vercel)
+        if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+            try {
+                credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+                console.log('✅ Credentials loaded from environment variable');
+            } catch (e) {
+                return {
+                    success: false,
+                    error: 'GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is invalid JSON'
+                };
+            }
+        } else {
+            // Fallback to file (Local development)
+            const CREDENTIALS_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS || './google-credentials.json';
+
+            // Check if credentials file exists
+            if (!fs.existsSync(CREDENTIALS_PATH)) {
+                return {
+                    success: false,
+                    error: 'Vertex AI görsel oluşturma için Google Service Account ayarlanmamış. Manuel görsel yükleyebilir veya URL girebilirsiniz.'
+                };
+            }
+
+            // Load service account credentials from file
+            credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf-8'));
+            console.log('✅ Credentials loaded from file');
         }
 
-        // Load service account credentials
-        const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf-8'));
+        // Create JWT
 
         // Create JWT
         const now = Math.floor(Date.now() / 1000);
