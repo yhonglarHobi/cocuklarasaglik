@@ -48,6 +48,7 @@ export async function importWordpressXmlAction(xmlContent: string): Promise<Impo
                 const content = item["content:encoded"]?.[0];
                 const excerpt = item["excerpt:encoded"]?.[0] || "";
                 const slug = item["wp:post_name"]?.[0];
+                const originalLink = item.link?.[0]; // Orijinal tam linki yedekle
                 const pubDate = item.pubDate?.[0] ? new Date(item.pubDate[0]) : new Date();
 
                 // Kategori (birden fazla olabilir, ilkini alalım)
@@ -109,6 +110,7 @@ export async function importWordpressXmlAction(xmlContent: string): Promise<Impo
                         excerpt: excerpt.substring(0, 300),
                         published: false, // Kontrol edilmek üzere TASLAK yapıldı
                         source: "WORDPRESS_IMPORT", // Kaynak belirtildi
+                        originalUrl: originalLink, // Eski link yedeği
                         authorId: author.id,
                         categoryId: categoryId,
                         imageUrl: imageUrl,

@@ -38,7 +38,8 @@ model Article {
   imageUrl    String?  // Kapak görseli
   published   Boolean  @default(false)
   viewCount   Int      @default(0)
-  source      String   @default("SYSTEM") // SYSTEM, WORDPRESS_IMPORT, RSS vb.
+  source      String   @default("SYSTEM")
+  originalUrl String?  // WordPress'teki tam URL (Referans ve 301 yönlendirme için)
   
   // SEO Alanları
   focusKeyword String?
