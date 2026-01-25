@@ -32,7 +32,7 @@ export async function getVertexAccessToken(): Promise<{ success: boolean; token?
         if (!fs.existsSync(CREDENTIALS_PATH)) {
             return {
                 success: false,
-                error: 'Google credentials file not found. Please setup Service Account first.'
+                error: 'Vertex AI görsel oluşturma için Google Service Account ayarlanmamış. Manuel görsel yükleyebilir veya URL girebilirsiniz.'
             };
         }
 
