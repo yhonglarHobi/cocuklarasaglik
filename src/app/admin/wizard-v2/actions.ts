@@ -297,11 +297,14 @@ export async function improveSEOAction(articleId: string, improvementType: 'meta
 export async function generateArticlesAction(targetCategory: string, count: number) {
     try {
         const settings = await getSystemSettings();
-
+        const safeSettings = settings || { apiKey: null, systemPrompt: null };
 
         // FORCE FALLBACK (Emergency Fix for Vercel)
-        const apiKey = settings?.apiKey || process.env.GEMINI_API_KEY || "AIzaSyCI2xKBECH8v1n9aXQWxrQLKGdZRp4dQq0";
-        const systemPrompt = settings?.systemPrompt || `ADIM 1: ROL VE KİMLİK... (Default Prompt)`;
+        const apiKey = safeSettings.apiKey || process.env.GEMINI_API_KEY || "AIzaSyCI2xKBECH8v1n9aXQWxrQLKGdZRp4dQq0";
+        const systemPrompt = safeSettings.systemPrompt || `ADIM 1: ROL VE KİMLİK
+- Sen, "CocuklaraSaglik.com" platformunun baş editörüsün.
+- Kimliğin: Deneyimli, objektif ve kanıta dayalı tıp prensiplerine bağlı bir pediatri editörü.
+- Görevin: Ebeveynler için anlaşılır, güven verici ve bilimsel makaleler yazmak.`;
 
         if (!apiKey) return { success: false, error: "API Anahtarı bulunamadı! [Ayarlar] sayfasından ekleyin." };
 
