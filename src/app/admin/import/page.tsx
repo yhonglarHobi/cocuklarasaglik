@@ -12,13 +12,16 @@ import {
     ArrowRight,
     RefreshCw
 } from "lucide-react";
+import { toast } from "sonner";
+import { importWordpressXmlAction } from "./actions";
+import Link from "next/link";
 
 export default function WordpressImportPage() {
     const [step, setStep] = useState(1); // 1: Upload, 2: Analyze, 3: Importing, 4: Done
     const [file, setFile] = useState<File | null>(null);
     const [stats, setStats] = useState({ posts: 0, pages: 0, images: 0, authors: 0 });
-    const [progress, setProgress] = useState(0);
     const [logs, setLogs] = useState<string[]>([]);
+    const [loading, setLoading] = useState(false);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -26,42 +29,66 @@ export default function WordpressImportPage() {
         }
     };
 
-    const analyzeFile = () => {
-        if (!file) return;
-        setStep(2);
-        // Simulate analysis
-        setTimeout(() => {
-            setStats({
-                posts: 142,
-                pages: 12,
-                images: 356,
-                authors: 4
-            });
-        }, 1500);
+    const readFileContent = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.onerror = (e) => reject(e);
+            reader.readAsText(file);
+        });
     };
 
-    const startImport = () => {
+    const analyzeFile = async () => {
+        if (!file) return;
+        setLoading(true);
+        try {
+            const content = await readFileContent(file);
+            // Basit client-side analiz (Regex)
+            const postCount = (content.match(/<wp:post_type>post<\/wp:post_type>/g) || []).length;
+            const pageCount = (content.match(/<wp:post_type>page<\/wp:post_type>/g) || []).length;
+            const imgCount = (content.match(/<wp:post_type>attachment<\/wp:post_type>/g) || []).length + (content.match(/<img /g) || []).length;
+
+            setStats({
+                posts: postCount,
+                pages: pageCount,
+                images: imgCount,
+                authors: 1 // XML her zaman net yazar bilgisi vermez
+            });
+            setStep(2);
+        } catch (error) {
+            toast.error("Dosya okunamadı.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const startImport = async () => {
+        if (!file) return;
         setStep(3);
-        const totalItems = 100;
-        let p = 0;
+        setLogs(["Dosya okunuyor...", "Sunucuya gönderiliyor..."]);
 
-        const interval = setInterval(() => {
-            p += 5;
-            setProgress(p);
+        try {
+            const content = await readFileContent(file);
+            setLogs(prev => [...prev, "İçerik ayrıştırılıyor (bu işlem birkaç saniye sürebilir)..."]);
 
-            // Add simulation logs
-            if (p === 10) setLogs(prev => [...prev, "XML dosyası ayrıştırılıyor..."]);
-            if (p === 20) setLogs(prev => [...prev, "Kategoriler veritabanına eklendi."]);
-            if (p === 40) setLogs(prev => [...prev, "Yazarlar eşleştirildi."]);
-            if (p === 60) setLogs(prev => [...prev, "Makaleler işleniyor (142 adet)..."]);
-            if (p === 80) setLogs(prev => [...prev, "Görseller sunucuya indiriliyor..."]);
+            const result = await importWordpressXmlAction(content);
 
-            if (p >= 100) {
-                clearInterval(interval);
+            if (result.success) {
+                setLogs(prev => [...prev, ...(result.details || [])]);
+                setLogs(prev => [...prev, `BAŞARILI: ${result.importedCount} makale aktarıldı.`]);
+                setStats(s => ({ ...s, posts: result.importedCount || 0 }));
                 setStep(4);
-                setLogs(prev => [...prev, "İçe aktarma başarıyla tamamlandı!"]);
+                toast.success("İçe aktarma başarıyla tamamlandı!");
+            } else {
+                setLogs(prev => [...prev, `HATA: ${result.error}`]);
+                toast.error(result.error || "Bir hata oluştu");
+                // Hata olsa da logları göster
+                // setStep(4); // İsterseniz hata ekranına yönlendirebilirsiniz
             }
-        }, 200);
+        } catch (error: any) {
+            setLogs(prev => [...prev, `KRİTİK HATA: ${error.message}`]);
+            toast.error("İşlem sırasında hata oluştu.");
+        }
     };
 
     return (
@@ -133,9 +160,11 @@ export default function WordpressImportPage() {
                                         </div>
                                         <button
                                             onClick={analyzeFile}
-                                            className="bg-green-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-green-700 flex items-center gap-2"
+                                            disabled={loading}
+                                            className="bg-green-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
                                         >
-                                            Analiz Et <ArrowRight className="w-4 h-4" />
+                                            {loading ? <Loader className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                                            Analiz Et
                                         </button>
                                     </div>
                                 )}
@@ -173,8 +202,8 @@ export default function WordpressImportPage() {
                                 <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 text-sm text-yellow-800">
                                     <p className="font-bold flex items-center gap-2 mb-1"><AlertCircle className="w-4 h-4" /> Dikkat Edilmesi Gerekenler:</p>
                                     <ul className="list-disc pl-5 space-y-1 opacity-90">
-                                        <li>İçe aktarma işleminden sonra <strong>görsellerin yüklenmesi</strong> internet hızınıza bağlı olarak zaman alabilir.</li>
-                                        <li>Kategori yapısı mevcut sistemle eşleştirilecektir.</li>
+                                        <li>İçe aktarma işleminden sonra <strong>görsellerin URL'leri</strong> korunur (eski sunucudan çekilir).</li>
+                                        <li>Kategori yapısı ve <strong>URL (Slug) yapısı</strong> %100 korunur.</li>
                                     </ul>
                                 </div>
 
@@ -197,15 +226,11 @@ export default function WordpressImportPage() {
                                 <RefreshCw className="w-16 h-16 text-hc-blue animate-spin mx-auto" />
                                 <h2 className="text-xl font-bold text-gray-800">İçerikler Taşınıyor...</h2>
 
-                                <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-                                    <div
-                                        className="bg-hc-blue h-full transition-all duration-300 ease-out"
-                                        style={{ width: `${progress}%` }}
-                                    ></div>
-                                </div>
-                                <p className="text-sm font-bold text-gray-500">% {progress} Tamamlandı</p>
+                                <p className="text-sm text-gray-500 font-mono">
+                                    Lütfen bekleyin, veritabanına kayıt yapılıyor...
+                                </p>
 
-                                <div className="h-32 bg-black text-green-400 font-mono text-xs text-left p-4 rounded-lg overflow-y-auto space-y-1">
+                                <div className="h-48 bg-black text-green-400 font-mono text-xs text-left p-4 rounded-lg overflow-y-auto space-y-1 border border-gray-700 shadow-inner">
                                     {logs.map((log, i) => (
                                         <div key={i}>{'>'} {log}</div>
                                     ))}
@@ -222,15 +247,15 @@ export default function WordpressImportPage() {
                                 </div>
                                 <h2 className="text-3xl font-serif font-bold text-[#5c4a3d] mb-2">Harika! Taşıma Tamamlandı</h2>
                                 <p className="text-gray-500 max-w-md mx-auto">
-                                    Toplam <strong>{stats.posts} makale</strong> ve <strong>{stats.images} görsel</strong> başarıyla yeni sisteminize aktarıldı. Artık içeriklerinizi "Makaleler" bölümünde görebilirsiniz.
+                                    Toplam <strong>{stats.posts} makale</strong> başarıyla yeni sisteminize aktarıldı. Artık içeriklerinizi yönetmeye başlayabilirsiniz.
                                 </p>
                                 <div className="flex justify-center gap-4 mt-8">
-                                    <button className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded font-bold hover:bg-gray-50">
-                                        Admin Paneline Dön
-                                    </button>
-                                    <button className="bg-hc-blue text-white px-6 py-3 rounded font-bold hover:bg-blue-700 shadow-md">
-                                        Siteyi Görüntüle
-                                    </button>
+                                    <Link href="/admin/wizard-v2" className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded font-bold hover:bg-gray-50">
+                                        İçerikleri Yönet
+                                    </Link>
+                                    <Link href="/" target="_blank" className="bg-hc-blue text-white px-6 py-3 rounded font-bold hover:bg-blue-700 shadow-md">
+                                        Sitede Gör
+                                    </Link>
                                 </div>
                             </div>
                         )}
