@@ -38,6 +38,9 @@ const mockArticles = [
     }
 ];
 
+// Force dynamic rendering to ensure DB updates are reflected immediately
+export const dynamic = "force-dynamic";
+
 export default async function Homepage() {
 
     // 1. Fetch Real Articles from DB

@@ -39,6 +39,11 @@ model Article {
   published   Boolean  @default(false)
   viewCount   Int      @default(0)
   
+  // SEO Alanları
+  focusKeyword String?
+  imageAltText String?
+  seoScore     Int?     @default(0)
+  
   authorId    String
   author      User     @relation(fields: [authorId], references: [id])
   
@@ -77,6 +82,11 @@ model SystemSettings {
   id          String   @id @default("default") // Tek bir kayıt olacak
   apiKey      String?  // Gemini API Key
   systemPrompt String? // Yapay Zeka Talimatı
+  
+  // Analitik & SEO Kodları
+  googleAnalyticsId   String?
+  googleSearchConsole String?
+  facebookPixelId     String?
   updatedAt   DateTime @updatedAt
 }
 

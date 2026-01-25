@@ -29,7 +29,7 @@ export default function AdminLayout({
     }
 
     const menuItems = [
-        { name: "Sihirbaz & İçerik", icon: Zap, href: "/admin/wizard" },
+        { name: "Sihirbaz & İçerik", icon: Zap, href: "/admin/wizard-v2" },
         { name: "Menü Yönetimi", icon: Menu, href: "/admin/menu" },
         { name: "Kullanıcılar", icon: Users, href: "/admin/users" },
         { name: "E-Bülten", icon: Mail, href: "/admin/newsletter" },

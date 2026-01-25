@@ -15,18 +15,32 @@ export async function getSystemSettings() {
     }
 }
 
-export async function updateSystemSettings(apiKey: string, systemPrompt: string) {
+interface SettingsUpdateData {
+    apiKey: string;
+    systemPrompt: string;
+    googleAnalyticsId?: string;
+    googleSearchConsole?: string;
+    facebookPixelId?: string;
+}
+
+export async function updateSystemSettings(data: SettingsUpdateData) {
     try {
         await prisma.systemSettings.upsert({
             where: { id: "default" },
             update: {
-                apiKey,
-                systemPrompt,
+                apiKey: data.apiKey,
+                systemPrompt: data.systemPrompt,
+                googleAnalyticsId: data.googleAnalyticsId,
+                googleSearchConsole: data.googleSearchConsole,
+                facebookPixelId: data.facebookPixelId
             },
             create: {
                 id: "default",
-                apiKey,
-                systemPrompt,
+                apiKey: data.apiKey,
+                systemPrompt: data.systemPrompt,
+                googleAnalyticsId: data.googleAnalyticsId,
+                googleSearchConsole: data.googleSearchConsole,
+                facebookPixelId: data.facebookPixelId
             },
         });
         revalidatePath("/admin/settings");

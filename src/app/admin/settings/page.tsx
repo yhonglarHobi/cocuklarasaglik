@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Key, Save, AlertCircle, Database } from "lucide-react";
+import { Key, Save, AlertCircle, Database, Activity } from "lucide-react";
 
 import { toast } from "sonner";
 import { getSystemSettings, updateSystemSettings } from "./actions";
@@ -13,14 +13,21 @@ export default function SettingsPage() {
     const [systemPrompt, setSystemPrompt] = useState(DEFAULT_MASTER_PROMPT);
     const [loading, setLoading] = useState(true);
 
+    // --- Analytics States ---
+    const [gaId, setGaId] = useState("");
+    const [gscCode, setGscCode] = useState("");
+    const [fbPixel, setFbPixel] = useState("");
+
     useEffect(() => {
         // Sayfa açılınca veritabanından ayarları çek
         async function loadSettings() {
             const settings = await getSystemSettings();
             if (settings) {
                 setApiKey(settings.apiKey || "");
-                // Eğer veritabanında prompt varsa onu kullan, yoksa varsayılanı kullan
                 setSystemPrompt(settings.systemPrompt || DEFAULT_MASTER_PROMPT);
+                setGaId(settings.googleAnalyticsId || "");
+                setGscCode(settings.googleSearchConsole || "");
+                setFbPixel(settings.facebookPixelId || "");
             }
             setLoading(false);
         }
@@ -28,7 +35,13 @@ export default function SettingsPage() {
     }, []);
 
     const handleSave = async () => {
-        const result = await updateSystemSettings(apiKey, systemPrompt);
+        const result = await updateSystemSettings({
+            apiKey,
+            systemPrompt,
+            googleAnalyticsId: gaId,
+            googleSearchConsole: gscCode,
+            facebookPixelId: fbPixel
+        });
         if (result.success) {
             toast.success("Ayarlar başarıyla veritabanına kaydedildi! ✅");
         } else {
@@ -42,7 +55,7 @@ export default function SettingsPage() {
         <div className="min-h-screen bg-[#f8f9fa] font-sans p-8">
             <div className="max-w-4xl mx-auto">
                 <h1 className="text-2xl font-bold text-gray-800 mb-2">Sistem Ayarları</h1>
-                <p className="text-sm text-gray-500 mb-8">Yapay zeka yapılandırması ve veritabanı bağlantı ayarları.</p>
+                <p className="text-sm text-gray-500 mb-8">Yapay zeka yapılandırması, SEO araçları ve veritabanı ayarları.</p>
 
                 <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm mb-8">
                     <div className="flex items-center gap-2 mb-4">
@@ -66,24 +79,64 @@ export default function SettingsPage() {
                         <div>
                             <label className="block text-xs font-bold text-gray-500 mb-1">Master System Prompt (v3.0)</label>
                             <textarea
-                                rows={12}
+                                rows={8}
                                 value={systemPrompt}
                                 onChange={(e) => setSystemPrompt(e.target.value)}
                                 className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:border-hc-blue font-mono text-xs leading-relaxed"
                             />
-                            <p className="text-[10px] text-gray-400 mt-1">Ajanın davranış protokolünü buradan güncelleyebilirsiniz.</p>
                         </div>
                     </div>
+                </div>
 
-                    <div className="mt-6 flex justify-end">
-                        <button
-                            onClick={handleSave}
-                            className="bg-hc-blue text-white px-6 py-2 rounded font-bold text-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
-                        >
-                            <Save className="w-4 h-4" />
-                            Ayarları Veritabanına Kaydet
-                        </button>
+                {/* --- ANALYTICS & SEO PANEL --- */}
+                <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Activity className="w-5 h-5 text-green-600" />
+                        <h2 className="font-bold text-gray-700">Analitik ve İzleme Kodları</h2>
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Google Analytics ID (G-XXXXX)</label>
+                            <input
+                                type="text"
+                                placeholder="G-123456789"
+                                value={gaId}
+                                onChange={(e) => setGaId(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:border-green-500 font-mono"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Search Console Kodu</label>
+                            <input
+                                type="text"
+                                placeholder="Google site verification code"
+                                value={gscCode}
+                                onChange={(e) => setGscCode(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:border-green-500 font-mono"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Facebook Pixel ID (Opsiyonel)</label>
+                            <input
+                                type="text"
+                                placeholder="123456789012345"
+                                value={fbPixel}
+                                onChange={(e) => setFbPixel(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded text-sm outline-none focus:border-green-500 font-mono"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex justify-end mb-12">
+                    <button
+                        onClick={handleSave}
+                        className="bg-hc-blue text-white px-6 py-3 rounded font-bold text-sm hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-md"
+                    >
+                        <Save className="w-5 h-5" />
+                        Tüm Ayarları Kaydet
+                    </button>
                 </div>
 
                 {/* Database Info Box */}

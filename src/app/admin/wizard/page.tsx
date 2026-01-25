@@ -9,7 +9,6 @@ import {
     Loader,
     Target,
     Plus,
-    Edit2,
     Menu,
     Users,
     Mail,
@@ -19,10 +18,15 @@ import {
     Eye,
     Trash2,
     AlertTriangle,
-    RefreshCw, // New Icon
-    MessageSquare, // New Icon
-    ThumbsUp, // New Icon
-    Image as ImageIcon
+    RefreshCw,
+    MessageSquare,
+    ThumbsUp,
+    TrendingUp,
+    Save,
+    Edit2,
+    Image as ImageIcon,
+    Dices,
+    Upload // New Icon
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -33,8 +37,15 @@ import {
     deleteArticleAction,
     getCategoriesAction,
     createCategoryAction,
-    reviseArticleAction // New Action
+    reviseArticleAction, // New Action
+    improveSEOAction,
+    updateArticleContentAction,
+    regenerateImageAction,
+    uploadImageAction
 } from "./actions";
+import { SEOScorePanel } from "@/components/admin/SEOScorePanel";
+import { analyzeSEO, SEOAnalysisResult } from "@/lib/seo-analyzer";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 
 export default function AIWizardPage() {
     // ... (existing state)
@@ -54,6 +65,81 @@ export default function AIWizardPage() {
     const [feedbackRating, setFeedbackRating] = useState(85);
     const [feedbackNotes, setFeedbackNotes] = useState("");
     const [isRevising, setIsRevising] = useState(false);
+
+    // --- SEO STATE ---
+    const [focusKeyword, setFocusKeyword] = useState("");
+    const [metaExcerpt, setMetaExcerpt] = useState(""); // Excerpt / Meta Description
+    const [seoAnalysis, setSeoAnalysis] = useState<SEOAnalysisResult | null>(null);
+    const [isSeoImproving, setIsSeoImproving] = useState(false);
+
+    // --- MANUAL EDIT STATE ---
+    const [isEditing, setIsEditing] = useState(false);
+    const [editTitle, setEditTitle] = useState("");
+    const [editContent, setEditContent] = useState("");
+    const [editImage, setEditImage] = useState(""); // URL düzenleme için
+    const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+
+    // Canlı SEO Analizi
+    useEffect(() => {
+        if (selectedDraft) {
+            // Eğer excerpt henüz set edilmediyse ve draft'ta varsa al
+            if (!metaExcerpt && selectedDraft.excerpt) {
+                setMetaExcerpt(selectedDraft.excerpt);
+            }
+
+            const currentMeta = metaExcerpt || selectedDraft.excerpt || "";
+
+            const result = analyzeSEO(
+                selectedDraft.title,
+                currentMeta,
+                selectedDraft.content,
+                focusKeyword,
+                selectedDraft.image,
+                "" // Alt text henüz yok ama analizde görsel varlığını kontrol edecek
+            );
+            setSeoAnalysis(result);
+        } else {
+            setSeoAnalysis(null);
+            setFocusKeyword(""); // Reset
+            setMetaExcerpt("");
+        }
+    }, [selectedDraft, focusKeyword, metaExcerpt]);
+
+    // SEO İyileştime Handler
+    const handleSEOImprovement = async (type: 'meta' | 'length' | 'keyword') => {
+        if (!selectedDraft || !focusKeyword) {
+            toast.error("Önce bir odak kelime girmelisiniz.");
+            return;
+        }
+
+        setIsSeoImproving(true);
+        toast.info("AI iyileştirme yapıyor...");
+
+        try {
+            const res = await improveSEOAction(selectedDraft.id, type, focusKeyword);
+            if (res.success) {
+                toast.success("İyileştirme tamamlandı! 🎉");
+
+                // State'i güncelle
+                if (res.updatedField === 'excerpt') {
+                    setMetaExcerpt(res.newValue);
+                } else if (res.updatedField === 'content') {
+                    // Draft content'i güncelle
+                    const updatedDraft = { ...selectedDraft, content: res.newValue };
+                    setSelectedDraft(updatedDraft);
+                }
+
+                await refreshData();
+            } else {
+                toast.error(`Hata: ${res.error}`);
+            }
+        } catch (error) {
+            toast.error("Beklenmedik bir hata oluştu.");
+        } finally {
+            setIsSeoImproving(false);
+        }
+    };
 
     // ... (refreshData, useEffect remain) ...
     async function refreshData() {
@@ -124,8 +210,92 @@ export default function AIWizardPage() {
 
     const handleReview = (draft: any) => {
         setSelectedDraft(draft);
+        // Düzenleme state'lerini hazırla
+        setEditTitle(draft.title);
+        setEditContent(draft.content);
+        setEditImage(draft.imageUrl || ""); // Image
         setFeedbackRating(85); // Reset
         setFeedbackNotes(""); // Reset
+        setIsEditing(false); // Başlangıçta edit kapalı
+    };
+
+    // Görsel Yenileme Handler
+    const handleRegenerateImage = async () => {
+        if (!selectedDraft) return;
+        setIsRegeneratingImage(true);
+        toast.info("AI yeni bir görsel tasarlıyor... (Bu işlem 10-15s sürebilir)");
+        try {
+            const res = await regenerateImageAction(selectedDraft.id);
+            if (res.success && res.imageUrl) {
+                toast.success("Yeni görsel hazır! 🎨");
+                setEditImage(res.imageUrl); // Preview güncelle
+
+                // Draft'ı da güncelle
+                const updatedDraft = { ...selectedDraft, imageUrl: res.imageUrl, image: res.imageUrl };
+                setSelectedDraft(updatedDraft);
+                await refreshData();
+            } else {
+                toast.error(`Görsel hatası: ${res.error}`);
+            }
+        } catch (error) {
+            toast.error("Beklenmedik bir hata.");
+        } finally {
+            setIsRegeneratingImage(false);
+        }
+    };
+
+    // Dosya Yükleme Handler
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+
+        setIsUploading(true);
+        const file = e.target.files[0];
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await uploadImageAction(formData);
+            if (res.success && res.url) {
+                setEditImage(res.url); // URL inputunu güncelle
+                toast.success("Görsel yüklendi! 📁");
+            } else {
+                toast.error(`Yükleme hatası: ${res.error}`);
+            }
+        } catch (error) {
+            toast.error("Dosya yüklenirken hata oluştu.");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleSaveManual = async () => {
+        if (!selectedDraft) return;
+
+        const res = await updateArticleContentAction(
+            selectedDraft.id,
+            editTitle,
+            editContent,
+            metaExcerpt || selectedDraft.excerpt,
+            editImage // Image Update
+        );
+
+        if (res.success) {
+            toast.success("Değişiklikler kaydedildi! ✅");
+            setIsEditing(false);
+
+            // Local state'i güncelle
+            const updatedDraft = {
+                ...selectedDraft,
+                title: editTitle,
+                content: editContent,
+                imageUrl: editImage,
+                image: editImage
+            };
+            setSelectedDraft(updatedDraft);
+            await refreshData();
+        } else {
+            toast.error("Kaydetme hatası!");
+        }
     };
 
     const handlePublish = async (id: string) => {
@@ -197,7 +367,7 @@ export default function AIWizardPage() {
                     <div>
                         <h1 className="text-3xl font-sans font-bold text-gray-900 tracking-tight flex items-center gap-3">
                             <Zap className="w-8 h-8 text-hc-orange" fill="currentColor" />
-                            AI İçerik Sihirbazı
+                            AI İçerik Sihirbazı (v2)
                         </h1>
                         <p className="text-gray-500 mt-2 ml-1">Otonom içerik üretim merkezi ve kategori yönetimi.</p>
                     </div>
@@ -414,117 +584,258 @@ export default function AIWizardPage() {
                             {/* Left: Article Preview (Scrollable) */}
                             <div className="flex-1 overflow-y-auto p-8 lg:p-12 bg-white">
                                 <div className="max-w-3xl mx-auto">
-                                    {selectedDraft.image ? (
-                                        <div className="mb-8 rounded-xl overflow-hidden shadow-sm aspect-video bg-gray-100 relative group">
-                                            <img src={selectedDraft.image} alt={selectedDraft.title} className="w-full h-full object-cover" />
-                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                                <span className="text-white font-medium text-sm">AI Tarafından Üretildi (Google Imagen Bekleniyor)</span>
+                                    {/* Image Section with Edit Mode */}
+                                    <div className="mb-8 p-1">
+                                        {isEditing ? (
+                                            <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                                <label className="text-xs font-bold text-gray-500 uppercase">Kapak Görseli</label>
+
+                                                {/* Preview */}
+                                                {editImage && (
+                                                    <div className="aspect-video relative rounded-lg overflow-hidden bg-gray-200 border border-gray-300">
+                                                        <img src={editImage} alt="Preview" className="w-full h-full object-cover" />
+                                                    </div>
+                                                )}
+
+                                                <div className="flex gap-2 items-center">
+                                                    <input
+                                                        type="text"
+                                                        className="flex-1 p-2 text-sm border border-gray-300 rounded focus:border-hc-orange outline-none"
+                                                        placeholder="Görsel URL (https://...)"
+                                                        value={editImage}
+                                                        onChange={(e) => setEditImage(e.target.value)}
+                                                    />
+
+                                                    <label className="cursor-pointer bg-gray-200 text-gray-700 px-3 py-2 rounded font-bold text-xs hover:bg-gray-300 transition flex items-center gap-2 whitespace-nowrap">
+                                                        {isUploading ? <Loader className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                                        Yükle
+                                                        <input
+                                                            type="file"
+                                                            className="hidden"
+                                                            accept="image/*"
+                                                            onChange={handleFileUpload}
+                                                            disabled={isUploading}
+                                                        />
+                                                    </label>
+
+                                                    <button
+                                                        onClick={handleRegenerateImage}
+                                                        disabled={isRegeneratingImage}
+                                                        className="bg-purple-600 text-white px-3 py-2 rounded font-bold text-xs hover:bg-purple-700 transition flex items-center gap-2 whitespace-nowrap disabled:opacity-50"
+                                                        title="AI ile Yeniden Oluştur"
+                                                    >
+                                                        {isRegeneratingImage ? <Loader className="w-4 h-4 animate-spin" /> : <Dices className="w-4 h-4" />}
+                                                        AI Yenile
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            /* View Mode Image */
+                                            selectedDraft.image ? (
+                                                <div className="rounded-xl overflow-hidden shadow-sm aspect-video bg-gray-100 relative group">
+                                                    <img src={selectedDraft.image} alt={selectedDraft.title} className="w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                                        <span className="text-white font-medium text-sm">AI Tarafından Üretildi</span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-xl overflow-hidden shadow-sm aspect-video bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center p-6 text-center group hover:border-hc-orange transition-colors">
+                                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                                        <ImageIcon className="w-8 h-8 text-gray-400" />
+                                                    </div>
+                                                    <h3 className="text-base font-bold text-gray-700">Görsel Oluşturulamadı</h3>
+                                                    <p className="text-sm text-gray-400 mt-2 max-w-xs">Bu içerik için henüz bir görsel üretilmedi. Düzenle modundan ekleyebilirsiniz.</p>
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
+
+                                    {/* Edit Mode Toggle */}
+                                    <div className="flex justify-end mb-4">
+                                        {isEditing ? (
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => setIsEditing(false)}
+                                                    className="px-3 py-1.5 text-xs font-bold text-gray-500 bg-gray-100 rounded hover:bg-gray-200"
+                                                >
+                                                    İptal
+                                                </button>
+                                                <button
+                                                    onClick={handleSaveManual}
+                                                    className="px-3 py-1.5 text-xs font-bold text-white bg-green-600 rounded hover:bg-green-700 flex items-center gap-1"
+                                                >
+                                                    <Save className="w-3 h-3" /> Kaydet
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => setIsEditing(true)}
+                                                className="px-3 py-1.5 text-xs font-bold text-gray-600 bg-gray-100 border border-gray-200 rounded hover:bg-white hover:border-hc-orange transition-colors flex items-center gap-1"
+                                            >
+                                                <Edit2 className="w-3 h-3" /> Düzenle
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* ... (içeride kullanılan yer) */}
+
+                                    {isEditing ? (
+                                        <div className="space-y-4">
+                                            <input
+                                                className="w-full text-3xl font-extrabold text-gray-900 border-b-2 border-gray-200 focus:border-hc-orange outline-none py-2 bg-transparent"
+                                                value={editTitle}
+                                                onChange={(e) => setEditTitle(e.target.value)}
+                                                placeholder="Makale Başlığı"
+                                            />
+                                            <div className="border border-gray-200 rounded-lg">
+                                                <RichTextEditor
+                                                    value={editContent}
+                                                    onChange={setEditContent}
+                                                    placeholder="Makale içeriğini buradan düzenleyin..."
+                                                />
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="mb-8 rounded-xl overflow-hidden shadow-sm aspect-video bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center p-6 text-center group hover:border-hc-orange transition-colors">
-                                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                                <ImageIcon className="w-8 h-8 text-gray-400" />
-                                            </div>
-                                            <h3 className="text-base font-bold text-gray-700">Görsel Oluşturulamadı</h3>
-                                            <p className="text-sm text-gray-400 mt-2 max-w-xs">Bu içerik için henüz bir görsel üretilmedi. Google Imagen entegrasyonu bekleniyor.</p>
-                                        </div>
+                                        <>
+                                            <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900 mb-6 leading-tight">
+                                                {selectedDraft.title}
+                                            </h1>
+
+                                            <div
+                                                className="prose prose-lg prose-blue max-w-none 
+                                                prose-headings:font-bold prose-headings:text-gray-900 
+                                                prose-p:text-gray-600 prose-p:leading-relaxed
+                                                prose-img:rounded-xl prose-img:shadow-md
+                                                prose-li:text-gray-600"
+                                                dangerouslySetInnerHTML={{ __html: selectedDraft.content }}
+                                            />
+                                        </>
                                     )}
-
-                                    <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900 mb-6 leading-tight">
-                                        {selectedDraft.title}
-                                    </h1>
-
-                                    <div
-                                        className="prose prose-lg prose-blue max-w-none 
-                                        prose-headings:font-bold prose-headings:text-gray-900 
-                                        prose-p:text-gray-600 prose-p:leading-relaxed
-                                        prose-img:rounded-xl prose-img:shadow-md
-                                        prose-li:text-gray-600"
-                                        dangerouslySetInnerHTML={{ __html: selectedDraft.content }}
-                                    />
+                                    {/* Removed extra closing brace */}
                                 </div>
                             </div>
 
-                            {/* Right: AI Refinement Console (Fixed) */}
-                            <div className="w-full lg:w-96 bg-gray-50 border-l border-gray-200 flex flex-col h-[40vh] lg:h-auto shrink-0 shadow-[inset_4px_0_24px_-12px_rgba(0,0,0,0.1)]">
+                            {/* Right: AI Refinement Console & SEO (Fixed) */}
+                            <div className="w-full lg:w-96 bg-gray-50 border-l border-gray-200 flex flex-col h-[80vh] lg:h-auto shrink-0 shadow-[inset_4px_0_24px_-12px_rgba(0,0,0,0.1)]">
                                 <div className="p-6 flex-1 overflow-y-auto">
-                                    <div className="mb-6">
-                                        <h4 className="text-sm font-black text-gray-900 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                            <Zap className="w-4 h-4 text-hc-orange" fill="currentColor" />
-                                            Editör Asistanı
-                                        </h4>
-                                        <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-800 leading-relaxed">
-                                            Yazıyı inceleyin ve yapay zekaya geri bildirim verin. Puanınız ve notlarınızla AI bir sonraki yazıda sizi daha iyi anlayacak.
-                                        </div>
-                                    </div>
 
-                                    {/* Control Group */}
-                                    <div className="space-y-6">
+                                    <div className="space-y-8">
 
-                                        {/* Rating */}
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center">
-                                                <label className="text-sm font-bold text-gray-700">Kalite Puanı</label>
-                                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${feedbackRating >= 80 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                                    {feedbackRating}/100
-                                                </span>
+                                        {/* 1. Editör Asistanı & Geri Bildirim (En Üste Taşındı) */}
+                                        <div className="space-y-4">
+                                            <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider mb-2 flex items-center gap-2 border-b border-gray-200 pb-2">
+                                                <Zap className="w-4 h-4 text-hc-orange" fill="currentColor" />
+                                                Editör Asistanı
+                                            </h4>
+
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <label className="text-sm font-bold text-gray-700">Kalite Puanı</label>
+                                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${feedbackRating >= 80 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                                        {feedbackRating}/100
+                                                    </span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="0" max="100" step="5"
+                                                    value={feedbackRating}
+                                                    onChange={(e) => setFeedbackRating(Number(e.target.value))}
+                                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-hc-blue"
+                                                />
                                             </div>
-                                            <input
-                                                type="range"
-                                                min="0" max="100" step="5"
-                                                value={feedbackRating}
-                                                onChange={(e) => setFeedbackRating(Number(e.target.value))}
-                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-hc-blue"
-                                            />
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-bold text-gray-700">Düzeltme Notları</label>
+                                                <textarea
+                                                    className="w-full h-24 p-3 text-sm border border-gray-200 rounded-lg focus:border-hc-orange focus:ring-1 focus:ring-hc-orange outline-none resize-none transition-shadow bg-white"
+                                                    placeholder="Örn: Görseli daha gerçekçi yap. Giriş paragrafını kısalt..."
+                                                    value={feedbackNotes}
+                                                    onChange={(e) => setFeedbackNotes(e.target.value)}
+                                                />
+                                                <div className="flex flex-wrap gap-2">
+                                                    {['Görseli Yenile 🖼️', 'Yazıyı Uzat 📝', 'Başlığı Değiştir 🏷️', 'Daha Samimi Ol 🥰', 'Tıbbi Kaynak Ekle 🩺', 'Daha Kısa Yaz ✂️'].map((tag) => (
+                                                        <button
+                                                            key={tag}
+                                                            onClick={() => setFeedbackNotes(prev => prev ? `${prev}, ${tag}` : tag)}
+                                                            className="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-medium text-gray-600 hover:border-hc-blue hover:text-hc-blue transition-colors"
+                                                        >
+                                                            {tag}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={handleRefine}
+                                                disabled={isRevising}
+                                                className="w-full py-3 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md transform active:scale-95 disabled:opacity-50 disabled:cursor-wait"
+                                            >
+                                                {isRevising ? (
+                                                    <><Loader className="w-4 h-4 animate-spin" /> Revize Ediyor...</>
+                                                ) : (
+                                                    <><RefreshCw className="w-4 h-4" /> Yazıyı İyileştir</>
+                                                )}
+                                            </button>
                                         </div>
 
-                                        {/* Feedback Input */}
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-gray-700">Düzeltme Notları</label>
-                                            <textarea
-                                                className="w-full h-32 p-3 text-sm border border-gray-200 rounded-lg focus:border-hc-orange focus:ring-1 focus:ring-hc-orange outline-none resize-none transition-shadow bg-white"
-                                                placeholder="Örn: Görseli daha gerçekçi yap. Giriş paragrafını kısalt..."
-                                                value={feedbackNotes}
-                                                onChange={(e) => setFeedbackNotes(e.target.value)}
-                                            />
-                                            {/* Quick Actions Tags */}
-                                            <div className="flex flex-wrap gap-2">
-                                                {['Görseli Yenile 🖼️', 'Yazıyı Uzat 📝', 'Başlığı Değiştir 🏷️', 'Daha Samimi Ol 🥰', 'Tıbbi Kaynak Ekle 🩺', 'Daha Kısa Yaz ✂️'].map((tag) => (
-                                                    <button
-                                                        key={tag}
-                                                        onClick={() => setFeedbackNotes(prev => prev ? `${prev}, ${tag}` : tag)}
-                                                        className="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-medium text-gray-600 hover:border-hc-blue hover:text-hc-blue transition-colors"
-                                                    >
-                                                        {tag}
-                                                    </button>
-                                                ))}
+
+                                        {/* 2. SEO Panel & Meta Yönetimi (Alta Taşındı) */}
+                                        <div className="space-y-4">
+                                            <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider mb-2 flex items-center gap-2 border-b border-gray-200 pb-2">
+                                                <TrendingUp className="w-4 h-4 text-green-600" />
+                                                SEO Optimizasyonu
+                                            </h4>
+
+                                            {/* Focus Keyword */}
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-bold text-gray-700 flex items-center gap-1">
+                                                    <Target className="w-4 h-4 text-gray-400" />
+                                                    Odak Anahtar Kelime
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full p-3 text-sm border border-gray-200 rounded-lg focus:border-hc-orange outline-none transition-shadow bg-white"
+                                                    placeholder="Örn: bebeklerde ateş"
+                                                    value={focusKeyword}
+                                                    onChange={(e) => setFocusKeyword(e.target.value)}
+                                                />
+                                            </div>
+
+                                            {/* Meta Description Input */}
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-bold text-gray-700 flex items-center gap-1">
+                                                    <FileText className="w-4 h-4 text-gray-400" />
+                                                    Meta Açıklama
+                                                </label>
+                                                <textarea
+                                                    className="w-full p-2 text-xs border border-gray-200 rounded-lg focus:border-hc-orange outline-none transition-shadow bg-white resize-none"
+                                                    placeholder="Otomatik veya manuel..."
+                                                    rows={3}
+                                                    value={metaExcerpt}
+                                                    onChange={(e) => setMetaExcerpt(e.target.value)}
+                                                />
+                                                <div className="flex justify-between text-[10px] text-gray-400">
+                                                    <span className={metaExcerpt.length > 160 ? "text-red-500" : ""}>{metaExcerpt.length} / 160</span>
+                                                </div>
+                                            </div>
+
+                                            {/* SEO Score Panel */}
+                                            <div>
+                                                {seoAnalysis && (
+                                                    <SEOScorePanel
+                                                        analysis={seoAnalysis}
+                                                        onFix={handleSEOImprovement}
+                                                        isFixing={isSeoImproving}
+                                                    />
+                                                )}
                                             </div>
                                         </div>
 
                                     </div>
                                 </div>
 
-                                {/* Bottom Actions */}
-                                <div className="p-6 bg-white border-t border-gray-200 space-y-3">
-                                    <button
-                                        onClick={handleRefine}
-                                        disabled={isRevising}
-                                        className="w-full py-3 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform active:scale-95 disabled:opacity-50 disabled:cursor-wait"
-                                    >
-                                        {isRevising ? (
-                                            <>
-                                                <Loader className="w-4 h-4 animate-spin" />
-                                                AI Revize Ediyor...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <RefreshCw className="w-4 h-4" />
-                                                Yazıyı İyileştir
-                                            </>
-                                        )}
-                                    </button>
-
+                                {/* Bottom Actions - Sadece Mobile ve Yayınla butonu kaldı */}
+                                <div className="p-6 bg-white border-t border-gray-200">
                                     {/* Mobile Publish Button */}
                                     <button
                                         onClick={() => handlePublish(selectedDraft.id)}

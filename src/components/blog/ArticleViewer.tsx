@@ -101,7 +101,7 @@ export function ArticleViewer({ article, relatedArticles = [] }: ArticleViewerPr
                                 alt={article.title}
                                 className="w-full h-auto object-cover max-h-[500px]"
                             />
-                            <p className="text-[10px] text-gray-400 mt-2 text-right px-2 pb-2">Görsel: AI tarafından makale için özel üretilmiştir.</p>
+                            <p className="text-[10px] text-gray-400 mt-2 text-right px-2 pb-2">Görsel: Gemini tarafından makale için özel üretilmiştir.</p>
                         </div>
                     )}
 

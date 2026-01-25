@@ -4,6 +4,44 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
 import { getSystemSettings } from "@/app/admin/settings/actions";
 import { revalidatePath } from "next/cache";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
+
+// --- GÖRSEL YÜKLEME AKSİYONU (UPLOAD) ---
+export async function uploadImageAction(formData: FormData) {
+    try {
+        const file = formData.get("file") as File;
+        if (!file) {
+            return { success: false, error: "Dosya bulunamadı." };
+        }
+
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        // Dosya ismini güvenli hale getir ve timestamp ekle
+        const filename = file.name.replace(/[^a-zA-Z0-9.-]/g, "").toLowerCase();
+        const uniqueName = `upload-${Date.now()}-${filename}`;
+
+        // Kayıt yolu (public/uploads)
+        const uploadDir = path.join(process.cwd(), "public", "uploads");
+
+        // Klasör yoksa oluştur
+        await mkdir(uploadDir, { recursive: true });
+
+        const filePath = path.join(uploadDir, uniqueName);
+
+        // Dosyayı kaydet
+        await writeFile(filePath, buffer);
+
+        // Public URL döndür
+        const publicUrl = `/uploads/${uniqueName}`;
+        return { success: true, url: publicUrl };
+
+    } catch (error: any) {
+        console.error("Upload Error:", error);
+        return { success: false, error: "Dosya yüklenemedi: " + error.message };
+    }
+}
 
 // --- YENİ EKLENEN İYİLEŞTİRME AKSİYONU ---
 export async function reviseArticleAction(articleId: string, rating: number, notes: string) {
@@ -73,85 +111,20 @@ export async function reviseArticleAction(articleId: string, rating: number, not
         // --- VERTEX AI IMAGEN INTEGRATION ---
         if (revisedData.image_prompt) {
             try {
-                const VERTEX_API_KEY = process.env.VERTEX_API_KEY;
-                const VERTEX_PROJECT_ID = process.env.VERTEX_PROJECT_ID;
-                const VERTEX_REGION = process.env.VERTEX_REGION || 'us-central1';
+                const { generateImageWithFallback } = await import('@/lib/vertex-imagen');
+                const imageUrl = await generateImageWithFallback(revisedData.image_prompt, {
+                    aspectRatio: '16:9',
+                    safetyFilterLevel: 'block_some',
+                    personGeneration: 'allow_adult'
+                });
 
-                if (VERTEX_API_KEY && VERTEX_PROJECT_ID) {
-                    // Google Vertex AI Imagen endpoint
-                    const endpoint = `https://${VERTEX_REGION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_REGION}/publishers/google/models/imagegeneration@006:predict`;
-
-                    // Prepare enhanced prompt for pediatric context
-                    const enhancedPrompt = `${revisedData.image_prompt}, warm lighting, family-friendly, realistic photograph, professional quality, safe for children`;
-
-                    console.log('🎨 Generating image with Vertex AI Imagen:', enhancedPrompt);
-
-                    const response = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${VERTEX_API_KEY}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            instances: [{
-                                prompt: enhancedPrompt
-                            }],
-                            parameters: {
-                                sampleCount: 1,
-                                aspectRatio: "16:9",
-                                safetyFilterLevel: "block_some",
-                                personGeneration: "allow_adult"
-                            }
-                        })
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-
-                        if (data.predictions && data.predictions[0]) {
-                            const base64Image = data.predictions[0].bytesBase64Encoded;
-
-                            // Save image to public/generated folder
-                            const fs = await import('fs');
-                            const path = await import('path');
-
-                            const outputDir = path.join(process.cwd(), 'public', 'generated');
-                            if (!fs.existsSync(outputDir)) {
-                                fs.mkdirSync(outputDir, { recursive: true });
-                            }
-
-                            const filename = `article-${articleId}-${Date.now()}.png`;
-                            const filepath = path.join(outputDir, filename);
-
-                            const imageBuffer = Buffer.from(base64Image, 'base64');
-                            fs.writeFileSync(filepath, imageBuffer);
-
-                            updateData.imageUrl = `/generated/${filename}`;
-                            console.log('✅ Vertex AI image saved:', updateData.imageUrl);
-                        } else {
-                            console.warn('⚠️ No image in Vertex response, falling back to Unsplash');
-                            // Fallback to Unsplash
-                            const keywords = revisedData.image_prompt.split(' ').slice(0, 4).join(',');
-                            updateData.imageUrl = `https://source.unsplash.com/1200x630/?${keywords}&sig=${Date.now()}`;
-                        }
-                    } else {
-                        const error = await response.text();
-                        console.error('❌ Vertex AI Error:', response.status, error);
-                        // Fallback to Unsplash
-                        const keywords = revisedData.image_prompt.split(' ').slice(0, 4).join(',');
-                        updateData.imageUrl = `https://source.unsplash.com/1200x630/?${keywords}&sig=${Date.now()}`;
-                    }
-                } else {
-                    console.warn('⚠️ Vertex AI credentials missing, using Unsplash');
-                    // Fallback to Unsplash
-                    const keywords = revisedData.image_prompt.split(' ').slice(0, 4).join(',');
-                    updateData.imageUrl = `https://source.unsplash.com/1200x630/?${keywords}&sig=${Date.now()}`;
+                if (imageUrl) {
+                    updateData.imageUrl = imageUrl;
+                    console.log('✅ Image generated:', imageUrl);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('❌ Image generation error:', error);
-                // Fallback to Unsplash on any error
-                const keywords = revisedData.image_prompt.split(' ').slice(0, 4).join(',');
-                updateData.imageUrl = `https://source.unsplash.com/1200x630/?${keywords}&sig=${Date.now()}`;
+                // Continue without image on error
             }
         }
 
@@ -175,6 +148,158 @@ export async function reviseArticleAction(articleId: string, rating: number, not
 
     } catch (error: any) {
         console.error("Revise Error:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+// --- MANUEL DÜZENLEME AKSİYONU ---
+export async function updateArticleContentAction(articleId: string, title: string, content: string, excerpt: string, imageUrl?: string) {
+    try {
+        await prisma.article.update({
+            where: { id: articleId },
+            data: { title, content, excerpt, imageUrl }
+        });
+        revalidatePath("/admin/wizard");
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
+// --- GÖRSEL YENİLEME AKSİYONU ---
+export async function regenerateImageAction(articleId: string) {
+    try {
+        const article = await prisma.article.findUnique({ where: { id: articleId } });
+        if (!article) return { success: false, error: "Makale bulunamadı." };
+
+        const settings = await getSystemSettings();
+        if (!settings?.apiKey) return { success: false, error: "API Anahtarı eksik." };
+
+        const genAI = new GoogleGenerativeAI(settings.apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+        // 1. Prompt Oluştur
+        const promptParams = `
+        GÖREV: Aşağıdaki makale için fotogerçekçi, sinematik ve etkileyici bir görsel oluşturma promptu (İngilizce) yaz.
+        Makale Başlığı: ${article.title}
+        Makale Özeti: ${article.content.substring(0, 300)}
+        
+        KURALLAR:
+        - Prompt SADECE İngilizce olsun.
+        - "Cinematic lighting, high resolution, photorealistic, 8k" gibi stil kelimeleri ekle.
+        - İnsanlar varsa (bebek, anne vb.) yüzleri net ve mutlu olsun.
+        - Sadece prompt metnini döndür.
+        `;
+
+        const result = await model.generateContent(promptParams);
+        const imagePrompt = result.response.text().trim();
+
+        // 2. Görseli Üret (Vertex Imagen)
+        const { generateImageWithFallback } = await import('@/lib/vertex-imagen');
+        const imageUrl = await generateImageWithFallback(imagePrompt, {
+            aspectRatio: '16:9',
+            safetyFilterLevel: 'block_some',
+            personGeneration: 'allow_adult'
+        });
+
+        if (!imageUrl) return { success: false, error: "Görsel servisi yanıt vermedi." };
+
+        // 3. Veritabanını Güncelle
+        await prisma.article.update({
+            where: { id: articleId },
+            data: { imageUrl: imageUrl }
+        });
+
+        revalidatePath("/admin/wizard");
+        return { success: true, imageUrl };
+
+    } catch (error: any) {
+        console.error("Image Gen Error:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+
+// --- SEO İYİLEŞTİRME AKSİYONU (YENİ) ---
+export async function improveSEOAction(articleId: string, improvementType: 'meta' | 'length' | 'keyword', focusKeyword: string) {
+    try {
+        const settings = await getSystemSettings();
+        const apiKey = settings?.apiKey || process.env.GEMINI_API_KEY;
+        if (!apiKey) return { success: false, error: "API Anahtarı eksik." };
+
+        const article = await prisma.article.findUnique({ where: { id: articleId } });
+        if (!article) return { success: false, error: "Makale bulunamadı." };
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+        let prompt = "";
+
+        switch (improvementType) {
+            case 'meta':
+                prompt = `
+                GÖREV: Aşağıdaki makale için harika bir SEO Meta Açıklaması (Excerpt) yaz.
+                Odak Anahtar Kelime: "${focusKeyword}"
+                Makale Başlığı: "${article.title}"
+                Makale Özeti: "${article.content.substring(0, 500)}..."
+                
+                KURALLAR:
+                1. Uzunluk 145-160 karakter arasında olsun.
+                2. Odak anahtar kelimeyi mutlaka geçir.
+                3. Tıklamaya teşvik edici, merak uyandırıcı olsun.
+                4. Sadece meta açıklama metnini döndür. Başka bir şey yazma.
+                `;
+                break;
+
+            case 'length':
+                prompt = `
+                GÖREV: Aşağıdaki makale içeriğini genişlet ve detaylandır.
+                Mevcut İçerik: "${article.content}"
+                
+                KURALLAR:
+                1. Mevcut içeriği koru ama her başlığın altına daha fazla detay, örnek ve açıklama ekle.
+                2. Toplam kelime sayısını en az 200 kelime artır.
+                3. Bilimsel ve güvenilir bir ton kullan.
+                4. Sadece genişletilmiş HTML içeriğini döndür. Markdown değil, HTML formatında olsun.
+                `;
+                break;
+
+            case 'keyword':
+                prompt = `
+                GÖREV: Aşağıdaki makale içeriğine "${focusKeyword}" anahtar kelimesini doğal bir şekilde yerleştir.
+                Mevcut İçerik: "${article.content}"
+                
+                KURALLAR:
+                1. Anahtar kelimeyi metnin akışını bozmadan, mantıklı yerlere ekle.
+                2. Anahtar kelime yoğunluğunu %2 civarına çıkar.
+                3. Kesinlikle <strong> veya <b> etiketi kullanma. Kelimeler normal metin olarak kalsın.
+                4. Sadece revize edilmiş HTML içeriğini döndür.
+                `;
+                break;
+        }
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const outputText = response.text().trim(); // Temiz çıktı
+
+        // Veritabanını güncelle
+        const updateData: any = {};
+        if (improvementType === 'meta') {
+            updateData.excerpt = outputText;
+        } else {
+            updateData.content = outputText.replace(/```html/g, "").replace(/```/g, "").trim();
+        }
+
+        await prisma.article.update({
+            where: { id: articleId },
+            data: updateData
+        });
+
+        // Güncel veriyi döndür ki frontend anında yenilensin
+        return { success: true, updatedField: improvementType === 'meta' ? 'excerpt' : 'content', newValue: updateData[improvementType === 'meta' ? 'excerpt' : 'content'] };
+
+    } catch (error: any) {
+        console.error("SEO Improve Error:", error);
         return { success: false, error: error.message };
     }
 }
@@ -298,13 +423,46 @@ export async function generateArticlesAction(targetCategory: string, count: numb
 
             const uniqueSlug = (article.slug || "yazi") + "-" + Date.now() + Math.floor(Math.random() * 1000);
 
-            // Image Generation Logic (Google Imagen API Placeholder)
-            // Pollinations AI removed per user request.
-            // TODO: Implement Google Imagen API integration here.
+            // Image Generation with Vertex AI (Gemini) - No Fallback
             const basePrompt = article.image_prompt || `${article.title} realistic photography, medical style`;
 
-            // For now, no image or placeholder.
-            const finalImage = null; // System will show "Görsel Yok" placeholder.
+            let finalImage: string | null = null;
+
+            try {
+                const { generateImageWithFallback } = await import('@/lib/vertex-imagen');
+                finalImage = await generateImageWithFallback(basePrompt, {
+                    aspectRatio: '16:9',
+                    safetyFilterLevel: 'block_some',
+                    personGeneration: 'allow_adult'
+                });
+
+                if (finalImage) {
+                    console.log('✅ Gemini görsel oluşturuldu:', article.title, '→', finalImage);
+                } else {
+                    console.log('⚠️ Görsel oluşturulamadı, makale görselsiz kaydedilecek:', article.title);
+                }
+            } catch (error: any) {
+                console.error('❌ Görsel oluşturma hatası:', error);
+                // Görsel olmadan devam et
+            }
+
+            let altText: string | null = null;
+            if (finalImage) {
+                try {
+                    const altPrompt = `
+                     SİSTEM: Sen bir SEO uzmanısın.
+                     GÖREV: Aşağıdaki makale başlığı ve görsel promptu için Türkçe, SEO uyumlu, 5-10 kelimelik bir "Görsel Alt Metni" (Alt Text) yaz.
+                     Başlık: ${article.title}
+                     Görsel Tanımı: ${basePrompt}
+                     SADECE ALT METNİ YAZ. Başka hiçbir şey yazma.
+                     `;
+                    const altRes = await model.generateContent(altPrompt);
+                    altText = altRes.response.text().trim();
+                    console.log('✅ Alt text üretildi:', altText);
+                } catch (e) {
+                    console.error('⚠️ Alt text üretilemedi:', e);
+                }
+            }
 
             await prisma.article.create({
                 data: {
@@ -351,7 +509,8 @@ export async function publishArticleAction(id: string) {
             data: { published: true }
         });
         revalidatePath("/admin/wizard");
-        revalidatePath("/"); // Ana sayfayı da güncelle
+        revalidatePath("/", "layout"); // Tüm siteyi yenile (Layout dahil)
+        revalidatePath("/makaleler");
         return { success: true };
     } catch (error) {
         console.error("Publishing Error:", error);
