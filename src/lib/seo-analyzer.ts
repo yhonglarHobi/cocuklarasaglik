@@ -238,30 +238,30 @@ export function checkKeywordDensity(content: string, focusKeyword?: string): SEO
     const occurrences = matches ? matches.length : 0;
     const density = (occurrences / wordCount) * 100;
 
-    if (density >= 1 && density <= 3) {
+    if (density >= 0.5 && density <= 2.5) {
         return {
             status: 'good',
             message: `Kelime yoğunluğu ideal (%${density.toFixed(1)})`,
             score: 100,
-            details: { density: density.toFixed(1), occurrences, ideal: '1-3%' }
+            details: { density: density.toFixed(1), occurrences, ideal: '0.5-2.5%' }
         };
     }
 
-    if (density > 0 && density < 1) {
+    if (density > 0 && density < 0.5) {
         return {
             status: 'warning',
-            message: `Kelime yoğunluğu düşük (%${density.toFixed(1)})`,
-            score: 60,
-            details: { density: density.toFixed(1), occurrences, ideal: '1-3%' }
+            message: `Kelime yoğunluğu biraz düşük (%${density.toFixed(1)}) - İdeal: %0.5`,
+            score: 80, // Puanı biraz artırdım, çok büyük bir sorun değil
+            details: { density: density.toFixed(1), occurrences, ideal: '0.5-2.5%' }
         };
     }
 
-    if (density > 3 && density <= 5) {
+    if (density > 2.5 && density <= 4) {
         return {
             status: 'warning',
             message: `Kelime yoğunluğu yüksek (%${density.toFixed(1)})`,
             score: 60,
-            details: { density: density.toFixed(1), occurrences, ideal: '1-3%' }
+            details: { density: density.toFixed(1), occurrences, ideal: '0.5-2.5%' }
         };
     }
 
