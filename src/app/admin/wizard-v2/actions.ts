@@ -4,10 +4,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
 import { getSystemSettings } from "@/app/admin/settings/actions";
 import { revalidatePath } from "next/cache";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
-// --- GÖRSEL YÜKLEME AKSİYONU (UPLOAD) ---
+
+// --- GÖRSEL YÜKLEME AKSİYONU (Base64 Fallback for Serverless) ---
 export async function uploadImageAction(formData: FormData) {
     try {
         const file = formData.get("file") as File;
@@ -15,31 +14,21 @@ export async function uploadImageAction(formData: FormData) {
             return { success: false, error: "Dosya bulunamadı." };
         }
 
+        // Convert file to Buffer
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        // Dosya ismini güvenli hale getir ve timestamp ekle
-        const filename = file.name.replace(/[^a-zA-Z0-9.-]/g, "").toLowerCase();
-        const uniqueName = `upload-${Date.now()}-${filename}`;
+        // Convert to Base64 String
+        const base64String = buffer.toString('base64');
+        const mimeType = file.type || 'image/jpeg'; // Default to jpeg if unknown
+        const dataUrl = `data:${mimeType};base64,${base64String}`;
 
-        // Kayıt yolu (public/uploads)
-        const uploadDir = path.join(process.cwd(), "public", "uploads");
-
-        // Klasör yoksa oluştur
-        await mkdir(uploadDir, { recursive: true });
-
-        const filePath = path.join(uploadDir, uniqueName);
-
-        // Dosyayı kaydet
-        await writeFile(filePath, buffer);
-
-        // Public URL döndür
-        const publicUrl = `/uploads/${uniqueName}`;
-        return { success: true, url: publicUrl };
+        // Return Base64 URL directly (No file system write)
+        return { success: true, url: dataUrl };
 
     } catch (error: any) {
         console.error("Upload Error:", error);
-        return { success: false, error: "Dosya yüklenemedi: " + error.message };
+        return { success: false, error: "Dosya işlenemedi: " + error.message };
     }
 }
 
