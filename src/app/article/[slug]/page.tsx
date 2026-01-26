@@ -111,7 +111,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
     } catch (error) {
         console.error("Article Page Error:", error);
-        throw error;
+        notFound();
     }
 
     // Safely format date
