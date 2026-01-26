@@ -50,7 +50,7 @@ export async function reviseArticleAction(articleId: string, rating: number, not
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
         const refinementPrompt = `
-        SİSTEM ROLÜ: Sen, uzman bir tıbbi editör ve içerik stratejistisin. Görevin, bir çocuk sağlığı uzmanı tarafından hazırlanan taslağı gelen geri bildirimlere göre mükemmelleştirmektir.
+        SİSTEM ROLÜ: Sen, uzman bir tıbbi editör ve içerik stratejistisin.
 
         GİRDİLER:
         Taslak Metin: ${article.content}
@@ -59,24 +59,26 @@ export async function reviseArticleAction(articleId: string, rating: number, not
         Doktorun Notları: "${notes}"
 
         TALİMATLAR:
-        1. Puan < 80 ise: Yazının tonunu ve yapısını kökten gözden geçir. Eksik bilgileri tamamla.
-        2. Puan > 80 ise: Mevcut yapıyı koru, sadece spesifik geri bildirimleri (örn: "daha samimi ol") uygula.
-        3. Görsel Talebi: Eğer notlarda "görsel" kelimesi geçiyorsa veya görsel eksikse, JSON çıktısında "image_prompt" alanına SADECE İNGİLİZCE anahtar kelimeler yaz (örn: "baby crawling floor motor development"). Türkçe kelime KULLANMA. Maksimum 4-5 kelime.
-        4. Tıbbi Dil: Yazıyı cocuklarasaglik.com standartlarına uygun, hem güvenilir hem de ebeveynlerin anlayabileceği bir dille revize et.
-        5. Kaynakça Listesi: Metin sonuna ASLA kaynakça listesi ekleme.
+        1. Puan < 80 ise: Yazının tonunu ve yapısını kökten gözden geçir.
+        2. Puan > 80 ise: Mevcut yapıyı koru, sadece spesifik geri bildirimleri uygula.
+        3. Görsel Talebi: Eğer notlarda "görsel" kelimesi geçiyorsa, "image_prompt" alanına İNGİLİZCE prompt yaz.
+        4. Kaynakça Listesi: Metin sonuna ASLA kaynakça listesi ekleme.
 
-        ÇIKTI FORMATI (SADECE JSON):
+        ÖNEMLİ: Yanıtın SADECE aşağıdaki JSON formatında olmalı. Başka hiçbir metin yazma!
+
         {
             "title": "Revize Edilmiş Başlık",
-            "excerpt": "Revize edilmiş kısa özet",
+            "excerpt": "Revize edilmiş kısa özet (max 160 karakter)",
             "content": "Revize edilmiş HTML içeriği...",
-            "image_prompt": "Geliştirilmiş görsel promptu (Eğer görsel yenilenmesi isteniyorsa, yoksa boş bırak)"
+            "image_prompt": ""
         }
         `;
 
         const result = await model.generateContent(refinementPrompt);
         const response = await result.response;
         const text = response.text();
+
+        console.log('🔍 AI Raw Response:', text.substring(0, 200)); // Debug log
 
         let CleanJson = text.replace(/```json/g, "").replace(/```/g, "").trim();
         let revisedData;
@@ -86,9 +88,16 @@ export async function reviseArticleAction(articleId: string, rating: number, not
             // Fallback: try to extract JSON if mixed with text
             const jsonMatch = CleanJson.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                try { revisedData = JSON.parse(jsonMatch[0]); } catch (e2) { return { success: false, error: "AI yanıtı işlenemedi." }; }
+                try {
+                    revisedData = JSON.parse(jsonMatch[0]);
+                } catch (e2) {
+                    console.error('JSON Parse Error:', e2);
+                    console.error('Failed JSON:', jsonMatch[0].substring(0, 500));
+                    return { success: false, error: "AI yanıtı işlenemedi. Lütfen tekrar deneyin." };
+                }
             } else {
-                return { success: false, error: "AI yanıt formatı hatalı." };
+                console.error('No JSON found in response:', CleanJson.substring(0, 500));
+                return { success: false, error: "AI yanıt formatı hatalı. Lütfen tekrar deneyin." };
             }
         }
 
