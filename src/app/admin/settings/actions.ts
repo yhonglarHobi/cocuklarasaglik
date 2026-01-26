@@ -100,6 +100,16 @@ interface SettingsUpdateData {
 }
 
 export async function updateSystemSettings(data: SettingsUpdateData) {
+    // Sanitize Google Search Console Input
+    let cleanGSC = data.googleSearchConsole;
+    if (cleanGSC && cleanGSC.includes("<meta")) {
+        // Extract content="..."
+        const match = cleanGSC.match(/content="([^"]*)"/);
+        if (match && match[1]) {
+            cleanGSC = match[1];
+        }
+    }
+
     try {
         await prisma.systemSettings.upsert({
             where: { id: "default" },
@@ -107,7 +117,7 @@ export async function updateSystemSettings(data: SettingsUpdateData) {
                 apiKey: data.apiKey,
                 systemPrompt: data.systemPrompt,
                 googleAnalyticsId: data.googleAnalyticsId,
-                googleSearchConsole: data.googleSearchConsole,
+                googleSearchConsole: cleanGSC,
                 facebookPixelId: data.facebookPixelId,
                 adsensePublisherId: data.adsensePublisherId,
                 adsenseSidebarSlotId: data.adsenseSidebarSlotId,
@@ -119,7 +129,7 @@ export async function updateSystemSettings(data: SettingsUpdateData) {
                 apiKey: data.apiKey,
                 systemPrompt: data.systemPrompt,
                 googleAnalyticsId: data.googleAnalyticsId,
-                googleSearchConsole: data.googleSearchConsole,
+                googleSearchConsole: cleanGSC,
                 facebookPixelId: data.facebookPixelId,
                 adsensePublisherId: data.adsensePublisherId,
                 adsenseSidebarSlotId: data.adsenseSidebarSlotId,
