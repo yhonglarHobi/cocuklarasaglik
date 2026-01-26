@@ -37,11 +37,12 @@ import {
     deleteArticleAction,
     getCategoriesAction,
     createCategoryAction,
-    reviseArticleAction, // New Action
+    reviseArticleAction,
     improveSEOAction,
     updateArticleContentAction,
     regenerateImageAction,
-    uploadImageAction
+    uploadImageAction,
+    getPublishedArticlesAction
 } from "./actions";
 import { SEOScorePanel } from "@/components/admin/SEOScorePanel";
 import { analyzeSEO, SEOAnalysisResult } from "@/lib/seo-analyzer";
@@ -78,6 +79,38 @@ function DraftItem({ draft, onDelete, onReview, onPublish, isImported = false }:
     );
 }
 
+// --- PublishedItem Bileşeni (New) ---
+function PublishedItem({ article, onReview }: any) {
+    return (
+        <div className="p-4 hover:bg-green-50/30 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-l-4 border-green-500 bg-white mb-2 shadow-sm rounded-r">
+            <div>
+                <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                    {article.title}
+                </h3>
+                <div className="flex gap-2 text-xs mt-1 text-gray-500">
+                    <span className="bg-gray-100 px-2 py-0.5 rounded">{article.category}</span>
+                    <span>•</span>
+                    <span>{article.date}</span>
+                    {article.viewCount > 0 && (
+                        <>
+                            <span>•</span>
+                            <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {article.viewCount}</span>
+                        </>
+                    )}
+                </div>
+            </div>
+            <div className="flex gap-2 shrink-0">
+                <Link href={`/article/${article.id}`} target="_blank" className="p-2 text-gray-400 hover:text-hc-blue transition-colors" title="Sitede Gör">
+                    <TrendingUp className="w-4 h-4" />
+                </Link>
+                <button onClick={() => onReview(article)} className="px-3 py-1 text-xs font-bold border border-green-200 bg-green-50 text-green-700 rounded hover:bg-green-100 flex items-center gap-1">
+                    <Edit2 className="w-3 h-3" /> Düzenle
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function AIWizardPage() {
     // ... (existing state)
     const [isGenerating, setIsGenerating] = useState(false);
@@ -87,8 +120,12 @@ export default function AIWizardPage() {
     const [categories, setCategories] = useState<any[]>([]);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState("");
+
+    // Data States
     const [selectedDraft, setSelectedDraft] = useState<any>(null);
     const [drafts, setDrafts] = useState<any[]>([]);
+    const [publishedArticles, setPublishedArticles] = useState<any[]>([]);
+    const [activeTab, setActiveTab] = useState<'drafts' | 'published'>('drafts');
     const [isLoadingDrafts, setIsLoadingDrafts] = useState(true);
     const [aiProposal, setAiProposal] = useState<{ originalName: string, suggestedName: string, reason: string } | null>(null);
 
@@ -176,6 +213,7 @@ export default function AIWizardPage() {
     async function refreshData() {
         setIsLoadingDrafts(true);
         const dData = await getDraftArticlesAction();
+
         const formattedDrafts = dData.map((d: any) => ({
             id: d.id,
             title: d.title,
@@ -184,9 +222,27 @@ export default function AIWizardPage() {
             date: new Date(d.createdAt).toLocaleDateString("tr-TR", { hour: '2-digit', minute: '2-digit' }),
             category: d.category?.name || "Genel",
             content: d.content,
-            image: d.imageUrl // Include image
+            image: d.imageUrl,
+            published: d.published
         }));
         setDrafts(formattedDrafts);
+
+        // Fetch Published
+        const pData = await getPublishedArticlesAction();
+        const formattedPublished = pData.map((d: any) => ({
+            id: d.id,
+            title: d.title,
+            source: d.source || "AI / Gemini",
+            status: "Yayında",
+            date: new Date(d.createdAt).toLocaleDateString("tr-TR", { hour: '2-digit', minute: '2-digit' }),
+            category: d.category?.name || "Genel",
+            content: d.content,
+            image: d.imageUrl,
+            published: true,
+            viewCount: d.viewCount
+        }));
+        setPublishedArticles(formattedPublished);
+
         const cData = await getCategoriesAction();
         setCategories(cData);
         setIsLoadingDrafts(false);
@@ -477,13 +533,25 @@ export default function AIWizardPage() {
                         </div>
 
                         {/* Drafts Queue ... (Same) */}
+                        {/* Drafts & Published Queue */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                                <h2 className="font-sans font-bold text-gray-900 flex items-center gap-2 tracking-tight">
-                                    <FileText className="w-5 h-5 text-gray-400" />
-                                    Onay Bekleyen Taslaklar
-                                    <span className="bg-hc-blue text-white text-xs px-2 py-0.5 rounded-full">{drafts.length}</span>
-                                </h2>
+                            <div className="border-b border-gray-100 flex items-center">
+                                <button
+                                    onClick={() => setActiveTab('drafts')}
+                                    className={`px-6 py-4 font-bold text-sm flex items-center gap-2 transition-colors border-b-2 ${activeTab === 'drafts' ? 'border-hc-orange text-gray-900 bg-orange-50/50' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}
+                                >
+                                    <FileText className="w-4 h-4" />
+                                    Taslaklar
+                                    <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full ml-1">{drafts.length}</span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('published')}
+                                    className={`px-6 py-4 font-bold text-sm flex items-center gap-2 transition-colors border-b-2 ${activeTab === 'published' ? 'border-green-500 text-gray-900 bg-green-50/30' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}
+                                >
+                                    <CheckCircle className="w-4 h-4 text-green-600" />
+                                    Yayındakiler
+                                    <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full ml-1">{publishedArticles.length}</span>
+                                </button>
                             </div>
 
                             {isLoadingDrafts ? (
@@ -491,48 +559,69 @@ export default function AIWizardPage() {
                             ) : (
                                 <div className="max-h-[600px] overflow-y-auto divide-y divide-gray-100">
 
-                                    {/* --- AI Tarafından Üretilenler --- */}
-                                    {drafts.filter((d: any) => d.source !== "WORDPRESS_IMPORT").length > 0 && (
-                                        <div>
-                                            <div className="bg-gray-50 px-6 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider sticky top-0">
-                                                Yapay Zeka (AI) İçerikleri
-                                            </div>
-                                            {drafts.filter((d: any) => d.source !== "WORDPRESS_IMPORT").map((draft: any) => (
-                                                <DraftItem
-                                                    key={draft.id}
-                                                    draft={draft}
-                                                    onDelete={handleDelete}
-                                                    onReview={handleReview}
-                                                    onPublish={handlePublish}
-                                                />
-                                            ))}
-                                        </div>
+                                    {/* --- DRAFTS TAB --- */}
+                                    {activeTab === 'drafts' && (
+                                        <>
+                                            {/* --- AI Tarafından Üretilenler --- */}
+                                            {drafts.filter((d: any) => d.source !== "WORDPRESS_IMPORT").length > 0 && (
+                                                <div>
+                                                    <div className="bg-gray-50 px-6 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider sticky top-0">
+                                                        Yapay Zeka (AI) İçerikleri
+                                                    </div>
+                                                    {drafts.filter((d: any) => d.source !== "WORDPRESS_IMPORT").map((draft: any) => (
+                                                        <DraftItem
+                                                            key={draft.id}
+                                                            draft={draft}
+                                                            onDelete={handleDelete}
+                                                            onReview={handleReview}
+                                                            onPublish={handlePublish}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* --- WordPress'ten Gelenler --- */}
+                                            {drafts.filter((d: any) => d.source === "WORDPRESS_IMPORT").length > 0 && (
+                                                <div>
+                                                    <div className="bg-orange-50 px-6 py-2 text-xs font-bold text-orange-600 uppercase tracking-wider sticky top-0 border-t border-orange-100 flex justify-between items-center">
+                                                        <span>Dışa Aktarılanlar (WordPress)</span>
+                                                        <span className="bg-white px-2 py-0.5 rounded-full text-[10px] border border-orange-200">
+                                                            {drafts.filter((d: any) => d.source === "WORDPRESS_IMPORT").length}
+                                                        </span>
+                                                    </div>
+                                                    {drafts.filter((d: any) => d.source === "WORDPRESS_IMPORT").map((draft: any) => (
+                                                        <DraftItem
+                                                            key={draft.id}
+                                                            draft={draft}
+                                                            onDelete={handleDelete}
+                                                            onReview={handleReview}
+                                                            onPublish={handlePublish}
+                                                            isImported
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {drafts.length === 0 && (
+                                                <div className="p-8 text-center text-gray-400 text-sm">Henüz onay bekleyen taslak yok.</div>
+                                            )}
+                                        </>
                                     )}
 
-                                    {/* --- WordPress'ten Gelenler --- */}
-                                    {drafts.filter((d: any) => d.source === "WORDPRESS_IMPORT").length > 0 && (
+                                    {/* --- PUBLISHED TAB --- */}
+                                    {activeTab === 'published' && (
                                         <div>
-                                            <div className="bg-orange-50 px-6 py-2 text-xs font-bold text-orange-600 uppercase tracking-wider sticky top-0 border-t border-orange-100 flex justify-between items-center">
-                                                <span>Dışa Aktarılanlar (WordPress)</span>
-                                                <span className="bg-white px-2 py-0.5 rounded-full text-[10px] border border-orange-200">
-                                                    {drafts.filter((d: any) => d.source === "WORDPRESS_IMPORT").length}
-                                                </span>
-                                            </div>
-                                            {drafts.filter((d: any) => d.source === "WORDPRESS_IMPORT").map((draft: any) => (
-                                                <DraftItem
-                                                    key={draft.id}
-                                                    draft={draft}
-                                                    onDelete={handleDelete}
+                                            {publishedArticles.map((article: any) => (
+                                                <PublishedItem
+                                                    key={article.id}
+                                                    article={article}
                                                     onReview={handleReview}
-                                                    onPublish={handlePublish}
-                                                    isImported
                                                 />
                                             ))}
+                                            {publishedArticles.length === 0 && (
+                                                <div className="p-8 text-center text-gray-400 text-sm">Henüz yayınlanmış bir içerik yok.</div>
+                                            )}
                                         </div>
-                                    )}
-
-                                    {drafts.length === 0 && (
-                                        <div className="p-8 text-center text-gray-400 text-sm">Henüz onay bekleyen taslak yok.</div>
                                     )}
                                 </div>
                             )}
@@ -605,13 +694,15 @@ export default function AIWizardPage() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => handlePublish(selectedDraft.id)}
-                                    className="hidden md:flex bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold items-center gap-2 transition-colors shadow-sm"
-                                >
-                                    <CheckCircle className="w-4 h-4" />
-                                    Yayınla
-                                </button>
+                                {!selectedDraft.published && (
+                                    <button
+                                        onClick={() => handlePublish(selectedDraft.id)}
+                                        className="hidden md:flex bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold items-center gap-2 transition-colors shadow-sm"
+                                    >
+                                        <CheckCircle className="w-4 h-4" />
+                                        Yayınla
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => setSelectedDraft(null)}
                                     className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
@@ -799,7 +890,14 @@ export default function AIWizardPage() {
                                                     {['Görseli Yenile 🖼️', 'Yazıyı Uzat 📝', 'Başlığı Değiştir 🏷️', 'Daha Samimi Ol 🥰', 'Tıbbi Kaynak Ekle 🩺', 'Daha Kısa Yaz ✂️'].map((tag) => (
                                                         <button
                                                             key={tag}
-                                                            onClick={() => setFeedbackNotes(prev => prev ? `${prev}, ${tag}` : tag)}
+                                                            onClick={() => {
+                                                                if (tag.includes('Görseli Yenile')) {
+                                                                    handleRegenerateImage();
+                                                                    return;
+                                                                }
+                                                                setFeedbackNotes(prev => prev ? `${prev}, ${tag}` : tag);
+                                                                toast.success(`Not eklendi: ${tag}`);
+                                                            }}
                                                             className="px-2 py-1 bg-white border border-gray-200 rounded text-[10px] font-medium text-gray-600 hover:border-hc-blue hover:text-hc-blue transition-colors"
                                                         >
                                                             {tag}

@@ -128,9 +128,37 @@ export function ArticleViewer({ article, relatedArticles = [], adsConfig }: Arti
                     </div>
 
                     {/* Article Body */}
+                    {/* Styles for Prose Content */}
                     <article className="prose md:prose-lg max-w-none text-[#333333] prose-headings:font-serif prose-headings:text-[#5c4a3d] prose-a:text-hc-blue prose-strong:text-[#333333]">
-                        {/* We are using dangerouslySetInnerHTML for content */}
-                        <SafeHTML html={article.content} />
+                        {/* Markdown / HTML Hybrid Parser */}
+                        <SafeHTML html={(() => {
+                            let content = article.content || "";
+
+                            // Basic Markdown Detection (if strict HTML is not present or mixed)
+                            const hasMarkdown = /##|^\s*[-*]\s|\*\*/m.test(content);
+
+                            if (hasMarkdown) {
+                                content = content
+                                    // Headers
+                                    .replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold mt-4 mb-2">$1</h3>')
+                                    .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold mt-6 mb-3">$1</h2>')
+                                    .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold mt-6 mb-4">$1</h1>')
+                                    // Bold
+                                    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+                                    // Italic
+                                    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+                                    // Lists
+                                    .replace(/^\s*[-*]\s+(.*$)/gim, '<li>$1</li>')
+                                    // Wrap lists in ul (simple heuristic: consecutive lis)
+                                    .replace(/(<li>.*<\/li>)/gim, '<ul>$1</ul>')
+                                    // Fix double ul wrapping if multiple lines matched individually
+                                    .replace(/<\/ul><ul>/gim, '')
+                                    // Line breaks to paragraphs (if not already p tags)
+                                    .replace(/\n\n/gim, '<br/><br/>');
+                            }
+
+                            return content;
+                        })()} />
 
                         {/* In-Article Ad */}
                         {adsConfig && (

@@ -527,6 +527,21 @@ export async function getDraftArticlesAction() {
     }
 }
 
+export async function getPublishedArticlesAction() {
+    try {
+        const published = await prisma.article.findMany({
+            where: { published: true },
+            orderBy: { createdAt: "desc" },
+            take: 50,
+            include: { category: true }
+        });
+        return published;
+    } catch (error) {
+        console.error("Fetch Published Error:", error);
+        return [];
+    }
+}
+
 export async function publishArticleAction(id: string) {
     try {
         await prisma.article.update({
