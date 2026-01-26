@@ -110,13 +110,23 @@ export async function updateSystemSettings(data: SettingsUpdateData) {
         }
     }
 
+    // Sanitize Google Analytics ID Input
+    let cleanGA = data.googleAnalyticsId;
+    if (cleanGA && (cleanGA.includes("<script") || cleanGA.includes("gtag("))) {
+        // Try to match G-XXXXXXXXXX or UA-XXXXXXXX-X
+        const idMatch = cleanGA.match(/(G-[A-Z0-9]+|UA-\d+-\d+)/);
+        if (idMatch && idMatch[1]) {
+            cleanGA = idMatch[1];
+        }
+    }
+
     try {
         await prisma.systemSettings.upsert({
             where: { id: "default" },
             update: {
                 apiKey: data.apiKey,
                 systemPrompt: data.systemPrompt,
-                googleAnalyticsId: data.googleAnalyticsId,
+                googleAnalyticsId: cleanGA,
                 googleSearchConsole: cleanGSC,
                 facebookPixelId: data.facebookPixelId,
                 adsensePublisherId: data.adsensePublisherId,
@@ -128,7 +138,7 @@ export async function updateSystemSettings(data: SettingsUpdateData) {
                 id: "default",
                 apiKey: data.apiKey,
                 systemPrompt: data.systemPrompt,
-                googleAnalyticsId: data.googleAnalyticsId,
+                googleAnalyticsId: cleanGA,
                 googleSearchConsole: cleanGSC,
                 facebookPixelId: data.facebookPixelId,
                 adsensePublisherId: data.adsensePublisherId,
