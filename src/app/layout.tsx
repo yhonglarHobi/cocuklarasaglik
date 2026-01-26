@@ -16,12 +16,14 @@ export async function generateMetadata(): Promise<Metadata> {
       verification: {
         google: settings?.googleSearchConsole || undefined,
       },
+      metadataBase: new URL("https://cocuklarasaglik.com"),
     };
   } catch (error) {
     console.error("Metadata error:", error);
     return {
       title: "CocuklaraSaglik.com - Türkiye'nin Pediatri Portalı",
       description: "Pediatristler tarafından doğrulanan güvenilir çocuk sağlığı bilgileri.",
+      metadataBase: new URL("https://cocuklarasaglik.com"),
     };
   }
 }
