@@ -66,6 +66,27 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         });
 
         if (!article) {
+            // Smart Redirect Check:
+            // If article not found, maybe it's an old timestamped URL?
+            // Try to find the cleaned version.
+            const hasTimestamp = /-\d{13,}/.test(slug);
+            if (hasTimestamp) {
+                const cleanSlug = slug.replace(/-\d{13,}\d*$/, '')
+                    .toLowerCase()
+                    .replace(/[^a-z0-9-]/g, '-')
+                    .replace(/-+/g, '-')
+                    .replace(/^-|-$/g, '');
+
+                const foundRedirect = await prisma.article.findUnique({
+                    where: { slug: cleanSlug }
+                });
+
+                if (foundRedirect) {
+                    const { redirect } = await import('next/navigation');
+                    redirect(`/article/${foundRedirect.slug}`);
+                }
+            }
+
             notFound();
         }
 
