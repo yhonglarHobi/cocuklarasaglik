@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-head-element */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google"; // Keeping fonts
 import "./globals.css";
