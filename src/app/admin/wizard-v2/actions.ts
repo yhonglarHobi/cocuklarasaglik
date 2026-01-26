@@ -425,7 +425,28 @@ export async function generateArticlesAction(targetCategory: string, count: numb
                 }
             }
 
-            const uniqueSlug = (article.slug || "yazi") + "-" + Date.now() + Math.floor(Math.random() * 1000);
+
+            // Smart slug generation: Clean slug, check for duplicates, append number if needed
+            let baseSlug = (article.slug || "yazi")
+                .toLowerCase()
+                .replace(/[^a-z0-9-]/g, '-') // Remove special chars
+                .replace(/-+/g, '-') // Remove multiple dashes
+                .replace(/^-|-$/g, ''); // Trim dashes
+
+            let uniqueSlug = baseSlug;
+            let counter = 1;
+
+            // Check if slug exists, if yes, append -2, -3, etc.
+            while (true) {
+                const existing = await prisma.article.findUnique({
+                    where: { slug: uniqueSlug }
+                });
+
+                if (!existing) break; // Slug is unique, use it
+
+                counter++;
+                uniqueSlug = `${baseSlug}-${counter}`;
+            }
 
             // Image Generation with Vertex AI (Gemini) - No Fallback
             const basePrompt = article.image_prompt || `${article.title} realistic photography, medical style`;
