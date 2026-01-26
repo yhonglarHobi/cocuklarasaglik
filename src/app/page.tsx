@@ -126,9 +126,9 @@ export default async function Homepage() {
                                 <h3 className="text-2xl md:text-3xl font-serif font-bold mb-2 text-white">Kış Hastalıklarından Korunma</h3>
                                 <p className="text-green-50 text-sm max-w-md">Influenza, RSV ve soğuk algınlığı... Çocuğunuzu kış aylarında nasıl korursunuz? Bağışıklık güçlendiren tarifler ve uzman önerileri.</p>
                             </div>
-                            <button className="bg-white text-[#5c8a00] px-6 py-3 rounded font-bold text-sm shadow-sm hover:bg-green-50 transition-colors shrink-0">
+                            <Link href="/article/kis-hastaliklarindan-korunma-rehberi" className="bg-white text-[#5c8a00] px-6 py-3 rounded font-bold text-sm shadow-sm hover:bg-green-50 transition-colors shrink-0">
                                 Rehberi İncele
-                            </button>
+                            </Link>
                         </div>
                     </div>
 
