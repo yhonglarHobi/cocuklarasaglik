@@ -101,14 +101,25 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             select: { id: true, title: true } // Performance optimization
         });
 
-        // Get AdSense config
-        adsConfig = await getAdSenseConfig();
+        // Get AdSense config safely
+        try {
+            adsConfig = await getAdSenseConfig();
+        } catch (e) {
+            console.error("AdSense Config Error:", e);
+            adsConfig = { enabled: false, publisherId: '', articleSlot: '' };
+        }
 
     } catch (error) {
         console.error("Article Page Error:", error);
-        // Hata varsa 404'e yönlendirme, hatayı fırlat ki Vercel loglarında görelim
-        // ve Google'a geçici sunucu hatası (500) olduğunu belirtelim (404 kalıcı silindi demektir)
         throw error;
+    }
+
+    // Safely format date
+    let formattedDate = "";
+    try {
+        formattedDate = article.updatedAt.toLocaleDateString("tr-TR", { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch (e) {
+        formattedDate = new Date(article.updatedAt).toISOString().split('T')[0];
     }
 
     // Format for Viewer
@@ -117,7 +128,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         content: article.content,
         image: article.imageUrl,
         authorName: "Çocuklara Sağlık Yayın Kurulu",
-        date: article.updatedAt.toLocaleDateString("tr-TR", { year: 'numeric', month: 'long', day: 'numeric' }),
+        date: formattedDate,
         categoryName: article.category?.name || "Genel Sağlık",
         categorySlug: article.category?.slug || "genel",
     };
