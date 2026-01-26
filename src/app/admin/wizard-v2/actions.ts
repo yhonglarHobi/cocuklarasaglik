@@ -37,9 +37,11 @@ export async function reviseArticleAction(articleId: string, rating: number, not
     try {
         const settings = await getSystemSettings();
         // Fallback to environment variable if DB setting is missing
-        const apiKey = settings?.apiKey || process.env.GEMINI_API_KEY || "AIzaSyDanOsaPABZx-yRTR4EVrDkZZ3m8uprvH8";
+        const apiKey = settings?.apiKey || process.env.GEMINI_API_KEY;
 
-        if (!apiKey) return { success: false, error: "API Anahtarı eksik. (Env veya DB)" };
+        if (!apiKey) {
+            return { success: false, error: 'API Anahtarı eksik. Lütfen Admin Ayarlar sayfasından Gemini API Key ekleyin.' };
+        }
 
         const article = await prisma.article.findUnique({ where: { id: articleId } });
         if (!article) return { success: false, error: "Makale bulunamadı." };
@@ -162,8 +164,8 @@ export async function regenerateImageAction(articleId: string) {
         if (!article) return { success: false, error: "Makale bulunamadı." };
 
         const settings = await getSystemSettings();
-        const apiKey = settings?.apiKey || "AIzaSyDanOsaPABZx-yRTR4EVrDkZZ3m8uprvH8";
-        if (!apiKey) return { success: false, error: "API Anahtarı eksik." };
+        const apiKey = settings?.apiKey || process.env.GEMINI_API_KEY;
+        if (!apiKey) return { success: false, error: "API Anahtarı eksik. Lütfen ayarlardan ekleyin." };
 
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -214,14 +216,14 @@ export async function regenerateImageAction(articleId: string) {
 export async function improveSEOAction(articleId: string, improvementType: 'meta' | 'length' | 'keyword', focusKeyword: string) {
     try {
         const settings = await getSystemSettings();
-        const apiKey = settings?.apiKey || process.env.GEMINI_API_KEY || "AIzaSyDanOsaPABZx-yRTR4EVrDkZZ3m8uprvH8";
-        if (!apiKey) return { success: false, error: "API Anahtarı eksik." };
+        const apiKey = settings?.apiKey || process.env.GEMINI_API_KEY;
+        if (!apiKey) return { success: false, error: "API Anahtarı eksik. Lütfen ayarlardan ekleyin." };
 
         const article = await prisma.article.findUnique({ where: { id: articleId } });
         if (!article) return { success: false, error: "Makale bulunamadı." };
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         let prompt = "";
 
@@ -299,14 +301,10 @@ export async function generateArticlesAction(targetCategory: string, count: numb
         const settings = await getSystemSettings();
         const safeSettings = settings || { apiKey: null, systemPrompt: null };
 
-        // FORCE FALLBACK (Emergency Fix for Vercel)
-        const apiKey = safeSettings.apiKey || process.env.GEMINI_API_KEY || "AIzaSyDanOsaPABZx-yRTR4EVrDkZZ3m8uprvH8";
-        const systemPrompt = safeSettings.systemPrompt || `ADIM 1: ROL VE KİMLİK
-- Sen, "CocuklaraSaglik.com" platformunun baş editörüsün.
-- Kimliğin: Deneyimli, objektif ve kanıta dayalı tıp prensiplerine bağlı bir pediatri editörü.
-- Görevin: Ebeveynler için anlaşılır, güven verici ve bilimsel makaleler yazmak.`;
+        const apiKey = safeSettings.apiKey || process.env.GEMINI_API_KEY;
+        const systemPrompt = safeSettings.systemPrompt || `Sen, "CocuklaraSaglik.com" platformunun baş editörüsün. Deneyimli, objektif ve kanıta dayalı tıp prensiplerine bağlı bir pediatri editörüsün.`;
 
-        if (!apiKey) return { success: false, error: "API Anahtarı bulunamadı! [Ayarlar] sayfasından ekleyin." };
+        if (!apiKey) return { success: false, error: "API Anahtarı bulunamadı! Lütfen Admin > Ayarlar sayfasından Gemini API Key ekleyin." };
 
         const genAI = new GoogleGenerativeAI(apiKey);
         // Downgrade to 1.5-flash to check compatibilty
