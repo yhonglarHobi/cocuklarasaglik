@@ -3,13 +3,19 @@
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 
+// Fallback credentials if env variables are missing
+const FALLBACK_USER = "Dradmin";
+const FALLBACK_HASH = "$2b$10$39x/GlWSRrV1JwHbJUVlh.fLXOWX/P3VnJxSYdiVU9t3P6SMDKI3K"; // password: admin
+
 export async function loginAdmin(username: string, password: string) {
     try {
-        const adminUsername = process.env.ADMIN_USERNAME;
-        const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+        // Use env vars if available, otherwise use fallback defaults
+        const adminUsername = process.env.ADMIN_USERNAME || FALLBACK_USER;
+        const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH || FALLBACK_HASH;
 
+        // Double check just in case, though fallbacks should prevent this
         if (!adminUsername || !adminPasswordHash) {
-            return { success: false, error: 'Sistem yapılandırma hatası' };
+            return { success: false, error: 'Sistem yapılandırma hatası (Eksik Credential)' };
         }
 
         // Username kontrolü
