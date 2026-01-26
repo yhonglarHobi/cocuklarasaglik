@@ -80,7 +80,7 @@ function DraftItem({ draft, onDelete, onReview, onPublish, isImported = false }:
 }
 
 // --- PublishedItem Bileşeni (New) ---
-function PublishedItem({ article, onReview }: any) {
+function PublishedItem({ article, onReview, onDelete }: any) {
     return (
         <div className="p-4 hover:bg-green-50/30 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-l-4 border-green-500 bg-white mb-2 shadow-sm rounded-r">
             <div>
@@ -103,6 +103,9 @@ function PublishedItem({ article, onReview }: any) {
                 <Link href={`/article/${article.id}`} target="_blank" className="p-2 text-gray-400 hover:text-hc-blue transition-colors" title="Sitede Gör">
                     <TrendingUp className="w-4 h-4" />
                 </Link>
+                <button onClick={() => onDelete(article.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Sil">
+                    <Trash2 className="w-4 h-4" />
+                </button>
                 <button onClick={() => onReview(article)} className="px-3 py-1 text-xs font-bold border border-green-200 bg-green-50 text-green-700 rounded hover:bg-green-100 flex items-center gap-1">
                     <Edit2 className="w-3 h-3" /> Düzenle
                 </button>
@@ -616,6 +619,7 @@ export default function AIWizardPage() {
                                                     key={article.id}
                                                     article={article}
                                                     onReview={handleReview}
+                                                    onDelete={handleDelete}
                                                 />
                                             ))}
                                             {publishedArticles.length === 0 && (
