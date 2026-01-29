@@ -1,6 +1,6 @@
 import React from "react";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArticleViewer } from "@/components/blog/ArticleViewer";
 import { getAdSenseConfig } from "@/components/ads/actions";
 import { Metadata } from "next";
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
                     { slug: slug }
                 ]
             },
-            select: { title: true, excerpt: true }
+            select: { title: true, excerpt: true, slug: true, id: true }
         });
 
         if (!article) {
@@ -26,12 +26,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
             };
         }
 
+        const canonicalUrl = `https://cocuklarasaglik.com/article/${article.slug || article.id}`;
+
         return {
             title: `${article.title} - CocuklaraSaglik.com`,
             description: article.excerpt || `${article.title} hakkında detaylı bilgiler.`,
             openGraph: {
                 title: article.title,
                 description: article.excerpt || undefined,
+            },
+            alternates: {
+                canonical: canonicalUrl,
             }
         };
     } catch (error) {
@@ -64,6 +69,15 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             },
             include: { category: true }
         });
+
+        if (article) {
+            // SEO: ID -> Slug Redirect
+            // If user accessed via ID (e.g. /article/123) but article has a slug (e.g. /article/title), redirect to slug.
+            // We check if the current 'slug' param equals the article.id AND article.slug exists and is different.
+            if (slug === article.id && article.slug && article.slug !== article.id) {
+                redirect(`/article/${article.slug}`);
+            }
+        }
 
         if (!article) {
             // Smart Redirect Check:
@@ -98,7 +112,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                 published: true
             },
             take: 4,
-            select: { id: true, title: true } // Performance optimization
+            select: { id: true, title: true, slug: true } // Performance optimization with slug
         });
 
         // Get AdSense config safely
@@ -135,7 +149,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
     const relatedArticles = relatedArticlesDB.map(a => ({
         title: a.title,
-        link: `/article/${a.id}`
+        link: `/article/${a.slug || a.id}`
     }));
 
     return (

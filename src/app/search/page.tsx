@@ -66,7 +66,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                             readTime: "5 dk", // Placeholder logic
                             ageGroup: article.category?.name || "Genel Sağlık",
                             isDoctorApproved: true,
-                            image: article.imageUrl || undefined
+                            image: article.imageUrl || undefined,
+                            slug: article.slug || article.id
                         };
                         return <ArticleCard key={article.id} article={uiArticle} />;
                     })}

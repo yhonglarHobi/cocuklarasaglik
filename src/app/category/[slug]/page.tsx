@@ -70,7 +70,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                             readTime: "5 dk",
                             ageGroup: category.name,
                             isDoctorApproved: true,
-                            image: article.imageUrl || undefined
+                            image: article.imageUrl || undefined,
+                            slug: article.slug || article.id
                         };
                         return <ArticleCard key={article.id} article={uiArticle} />;
                     })}
