@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: "/",
             disallow: ["/admin/", "/api/"], // Admin ve API yollarını engelle
         },
-        sitemap: "https://cocuklarasaglik.com/sitemap.xml",
+        sitemap: "https://www.cocuklarasaglik.com/sitemap.xml",
     };
 }

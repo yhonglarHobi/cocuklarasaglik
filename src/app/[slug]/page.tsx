@@ -22,8 +22,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
     // 3. Veritabanı Makaleleri (WordPress Migrated & New)
     try {
-        const article = await prisma.article.findUnique({
-            where: { slug: slug, published: true },
+        // findFirst kullanılmalı çünkü findUnique AND koşuluyla çalışmaz
+        const article = await prisma.article.findFirst({
+            where: {
+                slug: slug,
+                published: true
+            },
             include: {
                 author: true,
                 category: true // Kategori ismini almak için

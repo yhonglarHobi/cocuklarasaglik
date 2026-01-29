@@ -11,6 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         const { slug } = await params;
         const article = await prisma.article.findFirst({
             where: {
+                published: true,
                 OR: [
                     { id: slug },
                     { slug: slug }
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
             };
         }
 
-        const canonicalUrl = `https://cocuklarasaglik.com/article/${article.slug || article.id}`;
+        const canonicalUrl = `https://www.cocuklarasaglik.com/article/${article.slug || article.id}`;
 
         return {
             title: `${article.title} - CocuklaraSaglik.com`,
@@ -59,9 +60,10 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     let adsConfig;
 
     try {
-        // Fetch Article safely
+        // Fetch Article safely - MUST include published: true for public access
         article = await prisma.article.findFirst({
             where: {
+                published: true,
                 OR: [
                     { id: slug }, // Try finding by ID first (since our links might use ID)
                     { slug: slug } // Or finding by slug
