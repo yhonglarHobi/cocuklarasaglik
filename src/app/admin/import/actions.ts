@@ -96,7 +96,7 @@ export async function importWordpressXmlAction(xmlContent: string): Promise<Impo
                 // Şimdilik görseli boş geçelim veya içerikten regex ile bulalım.
                 let imageUrl = null;
                 // Regex ile içerikteki ilk img src'yi bulma denemesi
-                const imgMatch = content.match(/src="([^"]+)"/);
+                const imgMatch = content.match(/<img[^>]+src=["']([^"']+)["']/);
                 if (imgMatch && imgMatch[1]) {
                     imageUrl = imgMatch[1];
                 }
