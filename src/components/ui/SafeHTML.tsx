@@ -1,6 +1,6 @@
 
 import React from 'react';
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from 'sanitize-html';
 
 interface SafeHTMLProps {
     html: string;
@@ -8,9 +8,16 @@ interface SafeHTMLProps {
 }
 
 export const SafeHTML: React.FC<SafeHTMLProps> = ({ html, className }) => {
-    const sanitizedHTML = DOMPurify.sanitize(html, {
-        ADD_TAGS: ['iframe'], // If you need to allow iframes (e.g. youtube), add here. Be careful.
-        ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling']
+    const sanitizedHTML = sanitizeHtml(html, {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat(['iframe', 'img']),
+        allowedAttributes: {
+            ...sanitizeHtml.defaults.allowedAttributes,
+            iframe: ['src', 'allow', 'allowfullscreen', 'frameborder', 'scrolling', 'width', 'height'],
+            img: ['src', 'alt', 'title', 'width', 'height', 'loading', 'class'],
+            a: ['href', 'name', 'target', 'rel'],
+            '*': ['class'] // Allow class attribute on all elements
+        },
+        allowedSchemes: ['http', 'https', 'mailto', 'tel'],
     });
 
     return (
